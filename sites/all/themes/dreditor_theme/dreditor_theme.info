@@ -1,0 +1,23 @@
+name = Dreditor Theme
+description = A Bootstrap Sub-theme.
+core = 7.x
+base theme = bootstrap
+
+; Regions
+regions[navigation]     = 'Navigation'
+regions[header]         = 'Top Bar'
+regions[highlighted]    = 'Highlighted'
+regions[help]           = 'Help'
+regions[content]        = 'Content'
+regions[sidebar_first]  = 'Primary'
+regions[sidebar_second] = 'Secondary'
+regions[footer]         = 'Footer'
+
+; Stylesheets
+stylesheets[all][] = css/style.css
+scripts[] = js/script.js
+
+settings[toggle_name] = 0
+settings[toggle_search] = 1
+settings[cdn_bootstrap] = 1
+settings[cdn_bootstrap_version] = 2.3.2
