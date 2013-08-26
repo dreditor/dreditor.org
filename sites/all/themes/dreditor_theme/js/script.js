@@ -10,10 +10,12 @@
         $button.prepend($icon);
       }
       if (typeof chrome !== 'undefined') {
-        $button.bind('click', function (e){
-          chrome.webstore.install();
-          e.preventDefault();
-        });
+        $button
+          .attr('href', '#')
+          .bind('click', function (e){
+            chrome.webstore.install();
+            e.preventDefault();
+          });
       }
     }
   };
