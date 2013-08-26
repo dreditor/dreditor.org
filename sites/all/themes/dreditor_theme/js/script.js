@@ -2,10 +2,18 @@
   
   Drupal.behaviors.dreditorTheme = {
     attach: function (context, settings) {
+      var $installed = $('#dreditor-is-installed');
       var $button = $('#install-dreditor');
-      if (chrome.app.isInstalled) {
-        $button.removeClass('btn-primary').addClass('btn-success').text('Dreditor Installed!');
-        $button.find('.icon-download').removeClass('icon-download');
+      if ($installed.length) {
+        var $icon = $button.find('.icon-download').clone().removeClass('icon-download').addClass('icon-ok');
+        $button.removeClass('btn-primary').addClass('btn-success').text(' Dreditor is Installed!');
+        $button.prepend($icon);
+      }
+      if (chrome !== undefined) {
+        $button.bind('click', function (e){
+          chrome.webstore.install();
+          e.preventDefault();
+        });
       }
     }
   };
