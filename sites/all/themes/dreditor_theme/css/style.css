@@ -1,4 +1,6 @@
-/**
- * This file should get overwritten if Method 1 is used. If Method 2 is chosen,
- * remove this comment and start adding your styles to this file.
- */
+.btn-icon .icon {
+  font-size: 150%;
+  margin-bottom: -0.25em;
+  margin-left: -0.5em;
+  margin-top: -0.5em;
+}
