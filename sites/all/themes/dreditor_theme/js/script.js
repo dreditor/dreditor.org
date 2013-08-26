@@ -6,7 +6,7 @@
       var $button = $('#install-dreditor');
       if ($installed.length) {
         var $icon = $button.find('.icon-download').clone().removeClass('icon-download').addClass('icon-ok');
-        $button.removeClass('btn-primary').addClass('btn-success').text(' Dreditor is Installed!');
+        $button.removeClass('btn-primary').addClass('btn-success').text(' Dreditor is installed!');
         $button.prepend($icon);
       }
       if (typeof chrome !== 'undefined') {
