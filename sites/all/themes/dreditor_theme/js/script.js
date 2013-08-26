@@ -9,7 +9,7 @@
         $button.removeClass('btn-primary').addClass('btn-success').text(' Dreditor is Installed!');
         $button.prepend($icon);
       }
-      if (chrome !== undefined) {
+      if (typeof chrome !== 'undefined') {
         $button.bind('click', function (e){
           chrome.webstore.install();
           e.preventDefault();
