@@ -3,3 +3,8 @@
   margin-right: 0.3em;
   margin-left: -0.3em;
 }
+.menu .icon {
+  line-height: 1em;
+  margin-left: -0.5em;
+  margin-right: 0.5em;
+}
