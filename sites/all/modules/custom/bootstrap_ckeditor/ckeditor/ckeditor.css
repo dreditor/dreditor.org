@@ -1,0 +1,24 @@
+body.cke_editable{
+  padding:10px;
+}
+body.cke_editable .container,
+body.cke_editable .row,
+body.cke_editable [class*=col-] {
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  outline:1px dashed #ccc;
+  padding: 5px;
+}
+body.cke_editable .container > *:first-child,
+body.cke_editable .row > *:first-child,
+body.cke_editable .row-fluid > *:first-child,
+body.cke_editable [class*=span] > *:first-child {
+  margin-top: 0;
+}
+body.cke_editable .container > *:last-child,
+body.cke_editable .row > *:last-child,
+body.cke_editable .row-fluid > *:last-child,
+body.cke_editable [class*=span] > *:last-child {
+  margin-bottom: 0;
+}

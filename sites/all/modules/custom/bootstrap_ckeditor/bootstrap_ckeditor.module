@@ -1,0 +1,124 @@
+<?php
+/**
+ * @file
+ */
+
+// Drupal needs this blank file.
+include_once('bootstrap_ckeditor.features.inc');
+
+/**
+ * Implements hook_menu().
+ * 
+ * @return boolean
+ */
+function bootstrap_ckeditor_menu() {
+  $items['ajax/ckeditor-css-js'] = array(
+    'title' => 'Dreditor Base CKEditor',
+    'page callback' => 'bootstrap_ckeditor_ckeditor_css_js',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Callback for ajax/ckeditor_js.
+ *
+ * This function acts very similarly to drupal_get_js(), but as a watered down
+ * version. This function is needed for injecting necessary JavaScript into the
+ * CKEditor's IFRAME DOM. Do not touch this function. Ask Mark Carver for help
+ * if you run into issues.
+ *
+ * NOTE: SCAYT (spellcheck) can be available as a button (to enable after the
+ * editor has finished loading), but it cannot be set to "autoload". The
+ * JavaScript injected here into the CKEditor's DOM will break otherwise.
+ */
+function bootstrap_ckeditor_ckeditor_css_js() {
+  // Retrieve all CSS.
+  $css = drupal_add_css();
+  drupal_alter('css', $css);
+  uasort($css, 'drupal_sort_css_js');
+  // Start building the scripts.
+  $scripts = array();
+  // Add an inline script to run (after 10ms) to initalize the Drupal behaviors.
+  drupal_add_js("\n<!--//--><![CDATA[//><!--\n setTimeout(function(){ Drupal.attachBehaviors(document, Drupal.settings); }, 10);\n//--><!]]>\n", array(
+    'type' => 'inline',
+    'group' => JS_THEME,
+    'weight' => 1000,
+  ));
+  // Retrieve all JavaScript.
+  $js = drupal_add_js();
+  drupal_alter('js', $js);
+  uasort($js, 'drupal_sort_css_js');
+  $i = 0;
+  foreach ($js as $script) {
+    // Skip adding the jQuery Update "fallback" inline script, it causes issues
+    // with the IFRAME's DOM.
+    if (is_string($script['data']) && strpos($script['data'], 'jquery_update/replace') !== FALSE) {
+      continue;
+    }
+    // Merge in Drupal.settings as an inline script.
+    if ($script['type'] === 'setting') {
+      $script['data'] = "\n<!--//--><![CDATA[//><!--\njQuery.extend(Drupal.settings, " . drupal_json_encode(drupal_array_merge_deep_array($script['data'])) . ");\n//--><!]]>\n";
+      $script['type'] = 'inline';
+    }
+    // Set unique IDs as the array key (needed for loading the scripts in order
+    // via a "lazyload" algorithm in JavaScript.
+    // @see: bootstrap_ckeditor/ckeditor/config.js
+    // @see: CKEDITOR.loadDrupalScripts()
+    $scripts['script-' . sprintf('%03d', $i)] = $script;
+    $i++;
+  }
+  // Spit out JSON data and then exit.
+  drupal_json_output(array(
+    'css' => $css,
+    'js' => $scripts,
+  ));
+  drupal_exit();
+}
+
+/**
+ * Implements hook_ckeditor_settings_alter().
+ */
+function bootstrap_ckeditor_ckeditor_settings_alter(&$settings) {
+  static $base_path;
+  static $module_path;
+  static $query;
+  if (!isset($base_path)) {
+    $base_path = base_path();
+  }
+  if (!isset($module_path)) {
+    $module_path = drupal_get_path('module', 'bootstrap_ckeditor');
+    $query = variable_get('css_js_query_string', base_convert(REQUEST_TIME, 10, 36));
+    $js_settings = array(
+      'bootstrap_ckeditor' => array(
+        'path' => $base_path . $module_path,
+        'query' => $query,
+        'ckeditorScripts' => NULL,
+        'ckeditorAriaWidgetScripts' => array(),
+      ),
+    );
+    drupal_add_js($js_settings, 'setting');
+    $theme_path = drupal_get_path('theme', variable_get('theme_default', 'bartik'));
+    foreach (file_scan_directory($theme_path, '/ckeditor.admin.js$/i') as $file) {
+      drupal_add_js($file->uri);
+    }
+  }
+  // Change the ckeditor config path.
+  $settings['customConfig'] = $base_path . $module_path . '/ckeditor/config.js?' . $query;
+  // Add additional styling for Bootstrap based themes.
+  $request = drupal_http_request(url('ajax/ckeditor-css-js', array('absolute' => TRUE)));
+  $json = drupal_json_decode($request->data);
+  foreach ($json['css'] as $css) {
+    if ($css['type'] === 'file') {
+      $settings['contentsCss'][] = $base_path . $css['data'] . '?' . $query;
+    }
+    elseif ($css['type'] === 'external') {
+      $settings['contentsCss'][] = $css['data'] . '?' . $query;
+    }
+  }
+  $settings['contentsCss'][] = $base_path . $module_path . '/ckeditor/ckeditor.css?' . $query;
+  if (!empty($settings['stylesCombo_stylesSet'])) {
+    unset($settings['stylesCombo_stylesSet']);
+  }
+}
