@@ -104,16 +104,17 @@ function bootstrap_ckeditor_ckeditor_profile_defaults() {
         'uicolor' => 'default',
         'uicolor_user' => 'default',
         'toolbar' => '[
-          [\'Undo\',\'Redo\'],
-          [\'Templates\',\'-\',\'Link\',\'Unlink\',\'-\',\'Image\',\'Media\',\'-\',\'video_filter\',\'MediaEmbed\',\'-\',\'NumberedList\',\'BulletedList\',\'-\',\'DrupalBreak\',\'SpecialChar\'],
-          [\'Cut\',\'Copy\',\'Paste\',\'PasteText\',\'PasteFromWord\'],
-          [\'SpellChecker\',\'Scayt\',\'-\',\'Find\',\'Replace\'],
-          [\'ShowBlocks\',\'Maximize\',\'Source\'],
-          \'/\',
-          [\'Styles\',\'RemoveFormat\'],
-          [\'Bold\',\'Italic\',\'Underline\',\'Strike\',\'-\',\'JustifyLeft\',\'JustifyCenter\',\'JustifyRight\',\'JustifyBlock\',\'-\',\'Outdent\',\'Indent\'],
-          [\'Blockquote\',\'-\',\'Subscript\',\'Superscript\']
-        ]',
+    [\'Undo\',\'Redo\'],
+    [\'Templates\',\'-\',\'Link\',\'Unlink\',\'-\',\'Image\',\'Media\',\'-\',\'video_filter\',\'MediaEmbed\',\'-\',\'NumberedList\',\'BulletedList\',\'-\',\'DrupalBreak\',\'SpecialChar\'],
+    [\'Cut\',\'Copy\',\'Paste\',\'PasteText\',\'PasteFromWord\'],
+    [\'SpellChecker\',\'Scayt\',\'-\',\'Find\',\'Replace\'],
+    [\'ShowBlocks\',\'Maximize\',\'Source\'],
+    \'/\',
+    [\'Styles\',\'RemoveFormat\'],
+    [\'Bold\',\'Italic\',\'Underline\',\'Strike\',\'-\',\'JustifyLeft\',\'JustifyCenter\',\'JustifyRight\',\'JustifyBlock\',\'-\',\'Outdent\',\'Indent\'],
+    [\'Blockquote\',\'-\',\'Subscript\',\'Superscript\'],
+    [\'inline_comment\']
+]',
         'expand' => 'f',
         'width' => '100%',
         'lang' => 'en',
@@ -158,6 +159,18 @@ function bootstrap_ckeditor_ckeditor_profile_defaults() {
               'DrupalBreak' => array(
                 'label' => 'DrupalBreak',
                 'icon' => 'images/drupalbreak.png',
+              ),
+            ),
+            'default' => 't',
+          ),
+          'inline_comment' => array(
+            'name' => 'inline_comment',
+            'desc' => 'Support inline commenting in CKEditor.',
+            'path' => '%base_path%sites/all/modules/custom/ckeditor_comments/plugin/',
+            'buttons' => array(
+              'inline_comment' => array(
+                'icon' => 'inline-comment.png',
+                'label' => 'Comment',
               ),
             ),
             'default' => 't',
