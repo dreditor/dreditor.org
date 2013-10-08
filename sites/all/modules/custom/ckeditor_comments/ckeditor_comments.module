@@ -1,0 +1,150 @@
+<?php
+
+/**
+ * Helper function to fake comments.
+ */
+function _ckeditor_comments() {
+  return array(
+    1234 => array(
+      'uid' => 1,
+      'comment' => 'Testing this comment',
+      'timestamp' => 1381211248,
+      'pid' => NULL,
+      'resolved' => 0,
+    ),
+    1235 => array(
+      'uid' => 2,
+      'comment' => 'Reply to first comment',
+      'timestamp' => 1381211258,
+      'pid' => 1234,
+      'resolved' => 0,
+    ),
+    1236 => array(
+      'uid' => 3,
+      'comment' => 'Testing another comment',
+      'timestamp' => 1381211584,
+      'pid' => NULL,
+      'resolved' => 0,
+    ),
+    1237 => array(
+      'uid' => 1,
+      'comment' => 'Resolved comment',
+      'timestamp' => 1381211627,
+      'pid' => NULL,
+      'resolved' => 1,
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function ckeditor_comments_menu() {
+  $items['ajax/ckeditor-comment/%'] = array(
+    'title' => 'CKEditor Comment',
+    'page callback' => 'ckeditor_comments_get_comment',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function ckeditor_comments_element_info_alter(&$info) {
+  $info['textarea']['#process'][] = '_ckeditor_comments_process_textarea';
+}
+
+function _ckeditor_comments_process_textarea(&$element, &$form_state) {
+  if (!empty($element['#entity_type']) && !empty($element['#entity']) && ($comments = ckeditor_comments_get_comments($element['#entity_type'], $element['#entity']))) {
+    $element['#default_value'] = $element['#value'] = $comments;
+  }
+  return $element;
+}
+
+function ckeditor_comments_get_comments($entity_type, $entity) {
+  list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  // Simulates a DB query for returning the value of the text_format prior to
+  // the comments being stripped out.
+  // @todo replace with real DB query once a proper schema has been setup.
+  if ($entity_type === 'node' && $id === "4" && $vid === "4" && $bundle === 'page') {
+    return '<p>Donec ullamcorper nulla non <span data-cid="1234">metus auctor</span> fringilla. <span data-cid="1236">Vestibulum</span> id ligula porta felis euismod semper. Cras mattis <span data-cid="1237">consectetur purus sit amet</span> fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec sed odio dui. Nullam id dolor id nibh ultricies vehicula ut id elit. Donec sed odio dui.</p>';
+  }
+  return FALSE;
+}
+
+/**
+ * AJAX callback for retrieving a comment by ID.
+ * @todo make this just return via a DB query/menu wildcard loader.
+ */
+function ckeditor_comments_get_comment($cid) {
+  $json = FALSE;
+  $comments = _ckeditor_comments();
+  if (!empty($comments[$cid])) {
+    $json = $comments[$cid];
+  }
+  drupal_json_output($json);
+  drupal_exit();
+}
+
+/**
+ * Implements hook_ckeditor_plugin().
+ *
+ * Provides plugin to add support for inline commenting in CKEditor.
+ */
+function ckeditor_comments_ckeditor_plugin() {
+  return array(
+    'inline_comment' => array(
+      'name' => 'inline_comment',
+      'desc' => t('Support inline commenting in CKEditor.'),
+      'path' => drupal_get_path('module', 'ckeditor_comments') . '/plugin/',
+      'buttons' => array(
+        'inline_comment' => array(
+          'icon' => 'inline-comment.png',
+          'label' => t('Comment'),
+        ),
+      ),
+      'default' => 't',
+    ),
+  );
+}
+
+/**
+ * Implements hook_ckeditor_settings_alter().
+ */
+function ckeditor_comments_ckeditor_settings_alter(&$settings) {
+  static $init = FALSE;
+  if (!$init) {
+    $init = TRUE;
+    $users = array();
+    foreach (entity_load('user', array(1, 2, 3)) as $user) {
+      $users[$user->uid] = array(
+        'uid' => $user->uid,
+        'name' => format_username($user),
+        'picture' => theme('user_picture', array('account' => $user)),
+        'color' => _ckeditor_comments_generate_color(),
+      );
+    }
+    drupal_add_js(array(
+      'CKEditor' => array(
+        'inline_comments' => array(
+          'edit-body-und-0-value' => array(
+            'comments' => _ckeditor_comments(),
+          ),
+        ),
+      ),
+    ), 'setting');
+  }
+}
+
+/**
+ * Generate a unique random color.
+ */
+function _ckeditor_comments_generate_color() {
+  static $colors = array();
+  $color = sprintf("#%06x", rand(0, 16777215));
+  // If color was already generated, generate a new one.
+  if (in_array($color, $colors)) {
+    return _ckeditor_comments_generate_color();
+  }
+  return $colors[] = $color;
+}
