@@ -1,7 +1,7 @@
 (function($){
   
   var userAgent = navigator.userAgent.toLowerCase(); 
-  $.browser.chrome = /chrome/.test(navigator.userAgent.toLowerCase()); 
+  $.browser.chrome = /chrome/.test(navigator.userAgent.toLowerCase())  && chrome && chrome.webstore; 
 
   // Detect Chrome browsers.
   if ($.browser.chrome) {
@@ -10,9 +10,8 @@
     $.browser.version = userAgent;
     $.browser.safari = false;
   }
-
   // Detect Safari browsers.
-  if ($.browser.safari) {
+  else if ($.browser.safari) {
     userAgent = userAgent.substring(userAgent.indexOf('version/') +8);
     userAgent = userAgent.substring(0,userAgent.indexOf('.'));
     $.browser.version = userAgent;
@@ -31,7 +30,7 @@
   })
   .fail(function () {
     // Manually set a fall back production tag.
-    prodTag = '1.1.7';
+    prodTag = '1.2.1';
   })
   .complete(function () {
     $(document).ready(function () {
@@ -39,7 +38,7 @@
         var loadingText = 'Downloading Dreditor ' + prodTag + ' ...';
         var installText = 'Download Dreditor ' + prodTag;
         var installedText = 'Dreditor is installed. Click to re-install or update to Dreditor ' + prodTag;
-        var successText = 'Successfully download Dreditor ' + prodTag + '!';
+        var successText = 'Successfully downloaded Dreditor ' + prodTag + '!';
         if ($.browser.chrome) {
           installText = 'Install the Dreditor ' + prodTag + ' Chrome extension';
           installedText = 'Dreditor Chrome extension is installed <small>(updates managed via Chrome)</small>';
