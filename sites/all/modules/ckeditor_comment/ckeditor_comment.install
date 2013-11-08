@@ -1,0 +1,189 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function ckeditor_comment_install() {
+  // Create a default type for CKEditor Comments.
+  $type = new stdClass();
+  $type->type = 'default';
+  $type->label = 'Default';
+  $type->description = 'Default CKEditor comment type.';
+  $type->status = 1;
+  ckeditor_comment_type_save($type);
+
+  // Add a body field to our comment entity.
+  $field = field_info_field('ckeditor_comment_body');
+  if (empty($field)) {
+    $field = array(
+      'field_name' => 'ckeditor_comment_body',
+      'type' => 'text_long',
+      'entity_types' => array('ckeditor_comment'),
+    );
+    $field = field_create_field($field);
+  }
+  $instance = field_info_instance('ckeditor_comment', 'ckeditor_comment_body', 'default');
+  if (empty($instance)) {
+    $instance = array(
+      'field_name' => 'ckeditor_comment_body',
+      'entity_type' => 'ckeditor_comment',
+      'bundle' => 'default',
+      'label' => t('Body'),
+      'widget' => array('type' => 'text_textarea'),
+    );
+    $instance = field_create_instance($instance);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function ckeditor_comment_uninstall() {
+  field_delete_instance(field_info_instance('ckeditor_comment', 'ckeditor_comment_body', 'default'));
+}
+
+/**
+ * Implements hook_schema().
+ */
+function ckeditor_comment_schema() {
+  $schema = array();
+
+  $schema['ckeditor_comment'] = array(
+    'description' => 'The base table for ckeditor_comments.',
+    'fields' => array(
+      'cid' => array(
+        'description' => 'The primary identifier of this comment.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'pid' => array(
+        'description' => 'The identifier of the parent comment of this comment.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'type' => array(
+        'description' => 'The type (bundle) of this comment.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'uid' => array(
+        'description' => 'ID of Drupal user creator.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the comment was created.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the comment was most recently saved.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'bookmarks' => array(
+        'description' => 'The serialized array of CKEditor bookmarks to position the comment.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'normal',
+        'serialize' => TRUE,
+      ),
+      'resolved' => array(
+        'description' => 'Boolean indicating whether the comment is resolved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'entity_type' => array(
+        'description' => 'Entity type of the target entity (e.g. "node")',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_bundle' => array(
+        'description' => 'Entity bundle of the target entity (e.g. "article")',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'description' => 'ID of the target entity (e.g. $node->nid).',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'entity_vid' => array(
+        'description' => 'Revision ID of the target entity (e.g. $node->vid).',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'field_name' => array(
+        'description' => 'The field which the comment resides (e.g. "body").',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'field_summary' => array(
+        'description' => 'Boolean indicating whether this comment resides in the field summary, if applicable.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('cid'),
+  );
+
+  $schema['ckeditor_comment_type'] = array(
+    'description' => 'Stores information about all defined ckeditor_comment types.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique ckeditor_comment type ID.',
+      ),
+      'type' => array(
+        'description' => 'The machine-readable name of this type.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'description' => 'A brief description of this type.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+        'translatable' => TRUE,
+      ),
+    ) + entity_exportable_schema_fields(),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'type' => array('type'),
+    ),
+  );
+
+  return $schema;
+}
