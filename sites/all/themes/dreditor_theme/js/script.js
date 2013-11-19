@@ -63,7 +63,7 @@
         Drupal.behaviors.dreditorInstall = {
           attach: function(context, settings) {
             if ($('#dreditor-is-installed').length) {
-              if ($.browser.chrome || $.browser.safari) {
+              if ($button.length && ($.browser.chrome || $.browser.safari)) {
                 $button
                   .html($button.data('installed-text'))
                   .removeClass('btn-primary btn-success btn-danger')
@@ -71,7 +71,7 @@
                   .attr('disabled', true)
                   .prepend($(icon).addClass('dreditor-checkmark'));
               }
-              else {
+              else if ($button.length) {
                 $button
                   .button('installed')
                   .removeClass('btn-primary btn-success btn-danger')
@@ -79,7 +79,7 @@
                   .prepend($(icon).addClass('dreditor-checkmark'));
               }
             }
-            else {
+            else if ($button.length) {
               $button
                 .button('install')
                 .prepend($(icon).addClass('dreditor-arrow-down'));
