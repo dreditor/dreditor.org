@@ -1,0 +1,12 @@
+name = GitHub WebHook Endpoint
+description = Creates a GitHub webhook endpoint and invokes a hook when an event is received.
+package = Other
+core = 7.x
+configure = admin/config/services/github-webhook
+
+; Information added by drupal.org packaging script on 2013-10-18
+version = "7.x-1.0"
+core = "7.x"
+project = "github_webhook"
+datestamp = "1382062602"
+
