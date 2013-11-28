@@ -19,15 +19,19 @@
  */
 function dreditor_org_deploy_github_webhook_event(array $payload, array &$response, array $args) {
   if (!empty($payload['repository']['name'])) {
-    foreach ($payload['commits'] as $commit) {
-      watchdog('github_webhook', 'Commit @id pushed to repo @repo', array(
-        '@id' => $commit['id'],
-        '@repo' => $commit['url'],
-      ));
+    // Tag detection.
+    if (preg_match('/^refs/tags/(.*)/', $payload['ref'], $matches)) {
+      $values = array(
+        '@name' => $payload['repository']['name'],
+        '@tag' => $matches[1],
+      );
+      if ($payload['created']) {
+        watchdog('github_webhook', 'A new tag was created on the "@name" repository: @tag', $values);
+      }
+      elseif ($payload['deleted']) {
+        watchdog('github_webhook', 'An existing tag was deleted on the "@name" repository: @tag', $values);
+      }
     }
-    $response['messages'][] = t('Dreditor.org Deployment > Processed commits: @commits', array(
-      '@commits' => count($payload['commits']),
-    ));
 
     // Process repository specific payloads.
     if ($payload['repository']['name'] === 'dreditor.org') {
@@ -67,7 +71,7 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
       }
 
       // @TODO make this configurable or use contrib module.
-      $output = shell_exec('/usr/bin/git pull 2>&1');
+      $output = shell_exec('/usr/bin/git pull');
       watchdog('github_webhook', 'Git pull for dreditor.org: <code>!code</code>', array('!code' => $output));
 
       // Enable modules.
@@ -79,18 +83,6 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
 
       // Flush all caches.
       drupal_flush_all_caches();
-    }
-    elseif ($payload['repository']['name'] === 'dreditor' && preg_match('/^refs/tags/(.*)/', $payload['ref'], $matches)) {
-      $values = array(
-        '@name' => $payload['repository']['name'],
-        '@tag' => $matches[1],
-      );
-      if ($payload['created']) {
-        watchdog('github_webhook', 'A new tag was created on the "@name" repository: @tag', $values);
-      }
-      elseif ($payload['deleted']) {
-        watchdog('github_webhook', 'An existing tag was deleted on the "@name" repository: @tag', $values);
-      }
     }
   }
 }

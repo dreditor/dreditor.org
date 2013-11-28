@@ -1,0 +1,23 @@
+name = Project releases
+description = Provides a release node type to represent releases of projects.
+package = Project
+core = 7.x
+
+dependencies[] = project
+dependencies[] = views
+dependencies[] = list
+dependencies[] = text
+dependencies[] = file
+dependencies[] = entityreference
+dependencies[] = field_collection
+
+stylesheets[all][] = project_release.css
+
+files[] = views/handlers/project_release_handler_filter_version.inc
+
+; Information added by drupal.org packaging script on 2013-01-31
+version = "7.x-2.0-unstable1"
+core = "7.x"
+project = "project"
+datestamp = "1359590976"
+
