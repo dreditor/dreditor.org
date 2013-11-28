@@ -7,13 +7,13 @@
 
 
 /**
- * Preprocess the items and prepare the item slides to be rendered.
+ * Process the items and prepare the item slides to be rendered.
  *
  * @param $vars
  */
-function template_preprocess_flexslider_picture_list(&$vars) {
+function template_process_flexslider_picture_list(&$vars) {
   // Call default preprocessor first.
-  template_preprocess_flexslider_list($vars);
+  template_process_flexslider_list($vars);
 
   $optionset = &$vars['settings']['optionset'];
 
@@ -32,7 +32,7 @@ function template_preprocess_flexslider_picture_list(&$vars) {
     if (!empty($optionset->options['colorboxEnabled'])) {
       // Add additional necessary scripts and styles.
       drupal_add_js(drupal_get_path('module', 'picture') . '/picture_colorbox.js');
-      drupal_add_js(drupal_get_path('module', 'picture') . '/picture_colorbox.css');
+      drupal_add_css(drupal_get_path('module', 'picture') . '/picture_colorbox.css');
       if (!variable_get('colorbox_inline', 0)) {
         drupal_add_js(drupal_get_path('module', 'colorbox') . '/js/colorbox_inline.js');
       }

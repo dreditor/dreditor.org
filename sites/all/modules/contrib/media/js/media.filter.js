@@ -22,7 +22,7 @@
       if (matches) {
         var i = 1;
         for (var macro in tagmap) {
-          var index = matches.indexOf(macro);
+          var index = $.inArray(macro, matches);
           if (index !== -1) {
             var media_json = macro.replace('[[', '').replace(']]', '');
 

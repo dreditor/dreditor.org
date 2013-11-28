@@ -328,6 +328,7 @@ function picture_theme() {
         'item' => NULL,
         'path' => NULL,
         'image_style' => NULL,
+        'attributes' => array(),
         'breakpoints' => array(),
       ),
     ),
@@ -449,13 +450,18 @@ function picture_field_formatter_settings_summary($field, $instance, $view_mode)
 
   $summary = array();
 
-  $picture_mapping = picture_mapping_load($settings['picture_group']);
-  $breakpoint_group = breakpoints_breakpoint_group_load($picture_mapping->breakpoint_group);
-  if ($breakpoint_group) {
-    $summary[] = t('Picture group: @picture_group', array('@picture_group' => $breakpoint_group->name));
+  if (isset($settings['picture_group'])) {
+    $picture_mapping = picture_mapping_load($settings['picture_group']);
+    $breakpoint_group = breakpoints_breakpoint_group_load($picture_mapping->breakpoint_group);
+    if ($breakpoint_group) {
+      $summary[] = t('Picture group: @picture_group', array('@picture_group' => $breakpoint_group->name));
+    }
+    else {
+      $summary[] = t("Picture group doesn't exists");
+    }
   }
   else {
-    $summary[] = t("Picture group doesn't exists");
+    $summary[] = t("You have to select a mapping first.");
   }
 
   $image_styles = image_style_options(FALSE);
@@ -565,6 +571,7 @@ function theme_picture_formatter($variables) {
 
   $item['style_name'] = $variables['image_style'];
   $item['breakpoints'] = $variables['breakpoints'];
+  $item['attributes'] = $variables['attributes'];
 
   if (!isset($item['path']) && isset($variables['uri'])) {
     $item['path'] = $variables['uri'];
@@ -611,7 +618,7 @@ function theme_picture_formatter_colorbox($variables) {
 
     $options = array(
       'attributes' => array('class' => array('colorbox-inline')),
-      'query' => array('maxWidth' => '80%', 'maxHeight' => '80%', 'width' => '80%', 'height' => '80%', 'inline' => 'true'),
+      'query' => array('maxWidth' => '80%', 'maxHeight' => '80%', 'inline' => 'true'),
       'fragment' => $id,
       'html' => TRUE,
     );
@@ -638,6 +645,7 @@ function theme_picture_formatter_colorbox($variables) {
  *   - height: The height of the image (if known).
  *   - alt: The alternative text for text-based browsers.
  *   - breakpoints: An array containing breakpoints.
+ *   - attributes: An array containing attributes.
  *
  * @ingroup themeable
  */
@@ -737,6 +745,11 @@ function theme_picture($variables) {
       if (isset($variables[$key]) && !empty($variables[$key])) {
         $attributes[$key] = $variables[$key];
       }
+    }
+
+     // Add additional attributes passed in through the render array.
+    if (isset($variables['attributes']) && !empty($variables['attributes'])) {
+      $attributes = array_merge($attributes, $variables['attributes']);
     }
     $output[] = '<span data-picture=""' . drupal_attributes($attributes) . '>';
 
@@ -914,8 +927,8 @@ function picture_file_formatter_picture_view($file, $display, $langcode) {
         'style_name' => $fallback_image_style,
         'path' => $file->uri,
         'uri' => $file->uri,
-        'width' => $file->image_dimensions['width'],
-        'height' => $file->image_dimensions['height'],
+        'width' => isset($file->image_dimensions['width']) ? $file->image_dimensions['width'] : $file->metadata['width'],
+        'height' => isset($file->image_dimensions['height']) ? $file->image_dimensions['height'] : $file->metadata['height'],
         'alt' => token_replace($display['settings']['alt'], array('file' => $file), $replace_options),
         'title' => token_replace($display['settings']['title'], array('file' => $file), $replace_options),
       ),
