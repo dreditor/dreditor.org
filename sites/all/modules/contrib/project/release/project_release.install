@@ -34,6 +34,7 @@ function project_release_uninstall() {
   foreach (project_release_release_node_types() as $node_type) {
     $variables[] = 'project_release_download_base_' . $node_type;
     $variables[] = 'project_release_version_format_' . $node_type;
+    $variables[] = 'node_permissions_' . $node_type;
   }
   foreach ($variables as $variable) {
     variable_del($variable);
@@ -130,8 +131,9 @@ function project_release_schema() {
       'messages' => array(
         'description' => 'The text of any error messages created by the packaging scripts.',
         'type' => 'text',
+        'size' => 'medium',
         'not null' => FALSE,
-      )
+      ),
     ),
     'primary key' => array('nid'),
   );
@@ -185,6 +187,10 @@ function project_release_schema() {
     'primary key' => array('nid'),
   );
 
+  $system_schema = system_schema();
+  $schema['cache_project_release_download_table'] = $system_schema['cache'];
+  $schema['cache_project_release_download_table']['description'] = 'Cache table for project release downloads.';
+
   return $schema;
 }
 
@@ -201,6 +207,7 @@ function project_release_update_last_removed() {
 function project_release_update_dependencies() {
   $dependencies['project_release'][7000] = array(
     'system' => 7052,
+    'project' => 7004,
   );
 
   return $dependencies;
@@ -231,7 +238,9 @@ function project_release_update_7000() {
 
   $type = node_type_set_defaults($type);
   node_type_save($type);
-  node_add_body_field($type);
+  $instance = node_add_body_field($type, 'Release notes');
+  $instance['description'] = 'Enter a description of this release, such as a list of the major changes or updates.';
+  field_update_instance($instance);
 
   // Define node workflow and comment settings.
   variable_set('node_options_project_release', array('status', 'revision'));
@@ -1103,6 +1112,11 @@ function project_release_update_7000() {
       'settings' => array(
         'size' => '50',
       ),
+      'display' => array(
+        'default' => array(
+          'type' => 'hidden',
+        ),
+      ),
     ),
   ));
 
@@ -1366,7 +1380,7 @@ function project_release_update_7007() {
   // Create entities 1:1 with project release files.
   // The clever bit is that we're temporarily using the revision_id to store our fid.
   // This means we can do everything in the aggregate.
-  db_query("INSERT INTO {field_collection_item} (revision_id, field_name, archived) (SELECT f.fid, 'field_release_files', 0 FROM {project_release_file} f INNER JOIN {files} ff ON f.fid = ff.fid INNER JOIN {project_release_nodes} r ON f.nid = r.nid INNER JOIN {node} n ON r.nid = n.nid)");
+  db_query("INSERT INTO {field_collection_item} (revision_id, field_name, archived) (SELECT f.fid, 'field_release_files', 0 FROM {project_release_file} f INNER JOIN {files} ff ON f.fid = ff.fid INNER JOIN {project_release_nodes} r ON f.nid = r.nid INNER JOIN {node} n ON r.nid = n.nid INNER JOIN {node} n_p ON r.pid = n_p.nid)");
   // Generate revisions 1:1 with the freshly created entities.
   db_query("INSERT INTO {field_collection_item_revision} (item_id) (SELECT item_id FROM {field_collection_item} WHERE field_name = 'field_release_files')");
 
@@ -1713,4 +1727,42 @@ function project_release_update_7011() {
       node_type_save($type);
     }
   }
+}
+
+/**
+ * Update release body field name.
+ */
+function project_release_update_7012() {
+  foreach (project_release_release_node_types() as $node_type) {
+    $instance = field_read_instance('node', 'body', 'project_release');
+    $instance['label'] = 'Release notes';
+    field_update_instance($instance);
+  }
+}
+
+/**
+ * Access to releases is handled project-by-project. See project_node_access().
+ */
+function project_release_update_7013() {
+  variable_set('node_permissions_project_release', FALSE);
+}
+
+/**
+ * Create a cache table for project release downloads
+ */
+function project_release_update_7014() {
+  $system_schema = system_schema();
+  db_create_table('cache_project_release_download_table', array_merge($system_schema['cache'], array('description' => 'Cache table for project release downloads.')));
+}
+
+/**
+ * Increase size of {project_release_package_errors}.messages.
+ */
+function project_release_update_7015() {
+  db_change_field('project_release_package_errors', 'messages', 'messages', array(
+    'description' => 'The text of any error messages created by the packaging scripts.',
+    'type' => 'text',
+    'size' => 'medium',
+    'not null' => FALSE,
+  ));
 }

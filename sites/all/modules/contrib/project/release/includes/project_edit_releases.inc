@@ -17,15 +17,21 @@ function project_release_project_edit_releases($node) {
 function project_release_project_edit_form($form, $form_state, $node) {
   $api_vocabulary = taxonomy_vocabulary_load(variable_get('project_release_api_vocabulary', ''));
   $form['help'] = array(
-    '#markup' => '<p>' . t('For each term in the %api_vocabulary_name vocabulary, the following tables allow you to define which major versions are supported. You can also control if the development snapshot releases should be displayed on the front page of the project. Finally, for each term in the %api_vocabulary_name vocabulary, you can select which major version (if any) should be recommended for new users to download.', array('%api_vocabulary_name' => $api_vocabulary->name)) . '</p>',
+    '#markup' => '<p>' . t('For each term in the %api_vocabulary_name vocabulary, this page allows you to define which major versions are supported. You can also control if the development snapshot releases should be displayed on the front page of the project. Finally, for each term in the %api_vocabulary_name vocabulary, you can select which major version (if any) should be recommended for new users to download.', array('%api_vocabulary_name' => $api_vocabulary->name)) . '</p>',
   );
 
   // Since this form is used relatively infrequently, don't allow the js to be aggregated.
   drupal_add_js(drupal_get_path('module', 'project_release') . '/project_release.js', array('preprocess' => FALSE));
 
   // Get all the data about major versions for this project.
+  $term_query = new EntityFieldQuery();
+  $recommended_api_terms = $term_query->entityCondition('entity_type', 'taxonomy_term')
+    ->fieldCondition('field_release_recommended', 'value', 1)
+    ->execute();
   $query = db_select('project_release_supported_versions', 'psrv');
+  $query->condition('psrv.nid', $node->nid);
   $query->innerJoin('taxonomy_term_data', 'ttd', 'ttd.tid = psrv.tid');
+  $query->condition('ttd.tid', array_keys($recommended_api_terms['taxonomy_term']));
   $query->fields('psrv', array('tid', 'major', 'snapshot', 'supported', 'recommended'));
   $query->fields('ttd', array('name'));
   $query->orderBy('ttd.weight');
@@ -66,7 +72,7 @@ function project_release_project_edit_form($form, $form_state, $node) {
       $current_recommended = project_release_get_current_recommended($node->nid, $api_tid, $major_version);
       $form['api'][$api_tid]['major'][$major_version] = array(
         'current' => array(
-          '#markup' => check_plain($current_recommended->field_release_version[$current_recommended->language][0]['value']),
+          '#markup' => (!empty($current_recommended)) ? check_plain($current_recommended->field_release_version[$current_recommended->language][0]['value']) : '',
         ),
         'supported' => array(
           '#type' => 'checkbox',
@@ -97,6 +103,20 @@ function project_release_project_edit_form($form, $form_state, $node) {
     '#type' => 'submit',
     '#value' => t('Save'),
     '#weight' => 45,
+  );
+
+  $types = project_release_release_node_types();
+  // todo this uses the first release node type. What to do if there are
+  // multiple?
+  $links['links'] = array(
+    'add_new_release' => array(
+      'title' => t('Add new release'), 'href' => 'node/add/' . str_replace('_', '-', reset($types)) . '/' . $node->nid,
+    ),
+  );
+
+  $form['create_link'] = array(
+    '#markup' => '<p>' . theme('links', $links) . '</p>',
+    '#weight' => 50,
   );
 
   return $form;
@@ -177,6 +197,7 @@ function project_release_project_edit_form_submit($form, &$form_state) {
   $nid = $form_state['build_info']['args'][0]->nid;
 
   if (!empty($form_state['values']['api'])) {
+    $updates = array();
     foreach ($form_state['values']['api'] as $tid => $values) {
       if (!empty($values['major'])) {
         foreach ($values['major'] as $major => $major_values) {
@@ -195,6 +216,7 @@ function project_release_project_edit_form_submit($form, &$form_state) {
                 ->condition('tid', $tid)
                 ->condition('major', $major)
                 ->execute();
+              $updates[] = array('api_tid' => $tid, 'major' => $major);
             }
           }
           else {
@@ -208,6 +230,7 @@ function project_release_project_edit_form_submit($form, &$form_state) {
                 'snapshot' => $major_values['snapshot'],
               ))
               ->execute();
+            $updates[] = array('api_tid' => $tid, 'major' => $major);
           }
         }
       }
@@ -219,4 +242,12 @@ function project_release_project_edit_form_submit($form, &$form_state) {
     ->execute();
 
   drupal_set_message(t('Release settings have been saved.'));
+
+  // Since we've possibly adjusted the status/recommended releases, we need to
+  // recompute the update status for each set of releases and re-generate the
+  // download table.
+  if (!empty($updates)) {
+    drupal_register_shutdown_function('project_release_compute_update_status_multiple', $nid, $updates);
+  }
+
 }

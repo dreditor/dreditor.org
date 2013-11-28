@@ -25,7 +25,9 @@ function _project_release_create_release_node_type() {
 
   $type = node_type_set_defaults($type);
   node_type_save($type);
-  node_add_body_field($type);
+  $instance = node_add_body_field($type, 'Release notes');
+  $instance['description'] = 'Enter a description of this release, such as a list of the major changes or updates.';
+  field_update_instance($instance);
 
   // Define node workflow and comment settings.
   variable_set('node_options_project_release', array('status', 'revision'));
@@ -34,6 +36,9 @@ function _project_release_create_release_node_type() {
   // Set the project behavior setting for this node type say it's a release.
   variable_set('project_behavior_project_release', 'project_release');
 
+  // Access to releases is handled project-by-project. See project_node_access().
+  variable_set('node_permissions_project_release', FALSE);
+
   // Define default fields and field instances.
 
   // Project
@@ -41,13 +46,19 @@ function _project_release_create_release_node_type() {
     'entity_types' => array(),
     'settings' => array(
       'target_type' => 'node',
-      'handler' => 'base',
-      'handler_submit' => 'Change handler',
+      'handler' => 'project_behavior',
       'handler_settings' => array(
-        'target_bundles' => array(
-          'project' => 'project',
+        'behavior' => 'project',
+        'sort' => array(
+          'type' => 'none',
+        ),
+        'behaviors' => array(
+          'views-select-list' => array(
+            'status' => 0,
+          ),
         ),
       ),
+      'handler_submit' => 'Change handler',
     ),
     'field_name' => 'field_release_project',
     'type' => 'entityreference',
@@ -66,17 +77,11 @@ function _project_release_create_release_node_type() {
     'entity_types' => array(),
     'settings' => array(
       'target_type' => 'node',
-      'handler' => 'base',
-      'handler_submit' => 'Change handler',
+      'handler' => 'project_behavior',
       'handler_settings' => array(
-        'target_bundles' => array(
-          'project' => 'project',
-        ),
+        'behavior' => 'project',
         'sort' => array(
           'type' => 'none',
-          'property' => 'nid',
-          'field' => 'body:value',
-          'direction' => 'ASC',
         ),
         'behaviors' => array(
           'views-select-list' => array(
@@ -84,6 +89,7 @@ function _project_release_create_release_node_type() {
           ),
         ),
       ),
+      'handler_submit' => 'Change handler',
       'user_register_form' => FALSE,
     ),
     'required' => 1,
@@ -896,6 +902,11 @@ function _project_release_create_release_node_type() {
       'active' => 1,
       'settings' => array(
         'size' => '50',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'hidden',
+        ),
       ),
     ),
   ));
