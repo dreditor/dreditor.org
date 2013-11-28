@@ -18,7 +18,77 @@
  * @see https://help.github.com/articles/post-receive-hooks
  */
 function dreditor_org_deploy_github_webhook_event(array $payload, array &$response, array $args) {
-  object_log('payload', $payload);
-  object_log('response', $response);
-  object_log('$args', $args);
+  if (!empty($payload['repository']['name'])) {
+    foreach ($payload['commits'] as $commit) {
+      watchdog('github_webhook', 'Commit @id pushed to repo @repo', array(
+        '@id' => $commit['id'],
+        '@repo' => $commit['url'],
+      ));
+    }
+    $response['messages'][] = t('Dreditor.org Deployment > Processed commits: @commits', array(
+      '@commits' => count($payload['commits']),
+    ));
+
+    // Process repository specific payloads.
+    if ($payload['repository']['name'] === 'dreditor.org') {
+      $enable = array();
+      foreach ($payload['commits'] as $commit) {
+        // Parse commit messages for enabling/disabling of modules/themes.
+        if (preg_match_all('/(dis|en)abled? (module|theme)s?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
+          foreach ($matches as $match) {
+            $extensions = explode(',', str_replace(' ', '', $matches[3]));
+            $function = $match[2] . '_' . $match[1] . 'able';
+            // Save enables for later, until after the repository has been
+            // pulled.
+            if ($match[1] === 'en') {
+              foreach ($extensions as $extension) {
+                if (empty($enable[$function][$extension])) {
+                  $enable[$function][$extension] = TRUE;
+                }
+              }
+            }
+            else {
+              call_user_func_array($function, $extensions);
+            }
+          }
+        }
+        // Parse commit messages for uninstalling modules.
+        if (preg_match_all('/uninstall modules?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
+          foreach ($matches as $match) {
+            $modules = explode(',', str_replace(' ', '', $match[1]));
+            if (!empty($modules)) {
+              drupal_uninstall_modules($modules);
+              $response['messages'][] = t('Dreditor.org Deployment > Uninstalled the following modules: @list', implode(', ', $modules));
+            }
+          }
+        }
+      }
+
+      // @TODO make this configurable or use contrib module.
+      $output = shell_exec('/usr/bin/git pull 2>&1');
+      watchdog('github_webhook', 'Git pull for dreditor.org: <code>!code</code>', $output);
+
+      // Enable modules.
+      if (!empty($enable)) {
+        foreach ($enable as $function) {
+          call_user_func_array($function, array_keys($enable[$function]));
+        }
+      }
+
+      // Flush all caches.
+      drupal_flush_all_caches();
+    }
+    elseif ($payload['repository']['name'] === 'dreditor' && preg_match('/^refs/tags/(.*)/', $payload['ref'], $matches)) {
+      $values = array(
+        '@name' => $payload['repository']['name'],
+        '@tag' => $matches[1],
+      );
+      if ($payload['created']) {
+        watchdog('github_webhook', 'A new tag was created on the "@name" repository: @tag', $values);
+      }
+      elseif ($payload['deleted']) {
+        watchdog('github_webhook', 'An existing tag was deleted on the "@name" repository: @tag', $values);
+      }
+    }
+  }
 }
