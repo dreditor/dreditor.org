@@ -20,7 +20,7 @@
 function dreditor_org_deploy_github_webhook_event(array $payload, array &$response, array $args) {
   if (!empty($payload['repository']['name'])) {
     // Tag detection.
-    if (preg_match('/^refs\/tags/(.*)/', $payload['ref'], $matches)) {
+    if (preg_match('/^refs\/tags\/(.*)/', $payload['ref'], $matches)) {
       $values = array(
         '@name' => $payload['repository']['name'],
         '@tag' => $matches[1],
