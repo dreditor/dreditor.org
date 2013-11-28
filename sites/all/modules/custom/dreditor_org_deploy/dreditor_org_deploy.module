@@ -36,7 +36,7 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
         // Parse commit messages for enabling/disabling of modules/themes.
         if (preg_match_all('/(dis|en)abled? (module|theme)s?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
           foreach ($matches as $match) {
-            $extensions = explode(',', str_replace(' ', '', $matches[3]));
+            $extensions = explode(',', str_replace(' ', '', $match[3]));
             $function = $match[2] . '_' . $match[1] . 'able';
             // Save enables for later, until after the repository has been
             // pulled.
@@ -58,7 +58,9 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
             $modules = explode(',', str_replace(' ', '', $match[1]));
             if (!empty($modules)) {
               drupal_uninstall_modules($modules);
-              $response['messages'][] = t('Dreditor.org Deployment > Uninstalled the following modules: @list', implode(', ', $modules));
+              $response['messages'][] = t('Dreditor.org Deployment > Uninstalled the following modules: @list', array(
+                '@list' => implode(', ', $modules),
+              ));
             }
           }
         }
