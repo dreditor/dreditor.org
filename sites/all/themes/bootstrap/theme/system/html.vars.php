@@ -7,18 +7,20 @@
  */
 
 /**
- * Implements hook_process_html_tag().
+ * Implements hook_preprocess_html().
  */
-function bootstrap_process_html_tag(&$variables) {
-  $tag = &$variables['element'];
+function bootstrap_preprocess_html(&$variables) {
+  switch (theme_get_setting('bootstrap_navbar_position')) {
+    case 'fixed-top':
+      $variables['classes_array'][] = 'navbar-is-fixed-top';
+      break;
 
-  if ($tag['#tag'] == 'style' || $tag['#tag'] == 'script') {
-    // Remove redundant type attribute and CDATA comments.
-    unset($tag['#attributes']['type'], $tag['#value_prefix'], $tag['#value_suffix']);
+    case 'fixed-bottom':
+      $variables['classes_array'][] = 'navbar-is-fixed-bottom';
+      break;
 
-    // Remove media="all" but leave others unaffected.
-    if (isset($tag['#attributes']['media']) && $tag['#attributes']['media'] === 'all') {
-      unset($tag['#attributes']['media']);
-    }
+    case 'static-top':
+      $variables['classes_array'][] = 'navbar-is-static-top';
+      break;
   }
 }
