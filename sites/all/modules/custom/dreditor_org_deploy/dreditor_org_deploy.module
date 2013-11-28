@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * Hook fired when a payload is received from a GitHub Service hook.
+ *
+ * @param array $payload
+ *   The parsed JSON that was sent by GitHub.
+ * @param array &$response
+ *   An array containing the JSON response returned to the server that invoked
+ *   the webhook. The array is structured as follows:
+ *   - status: Either "ok" or "error".
+ *   - messages: An array of messages describing what happened.
+ *   - ...: Any additional data that you want to pass to the invoking server.
+ * @param array $args
+ *   The arguments that are passed through wildcards in the path.
+ *
+ * @see github_webhook_payload()
+ * @see https://help.github.com/articles/post-receive-hooks
+ */
+function dreditor_org_deploy_github_webhook_event(array $payload, array &$response, array $args) {
+  object_log('payload', $payload);
+  object_log('response', $response);
+  object_log('$args', $args);
+}
