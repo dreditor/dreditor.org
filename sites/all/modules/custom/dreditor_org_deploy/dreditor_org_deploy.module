@@ -48,7 +48,7 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
               }
             }
             else {
-              call_user_func_array($function, $extensions);
+              call_user_func_array($function, array($extensions));
             }
           }
         }
@@ -73,7 +73,7 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
       // Enable modules.
       if (!empty($enable)) {
         foreach ($enable as $function) {
-          call_user_func_array($function, array_keys($enable[$function]));
+          call_user_func_array($function, array(array_keys($enable[$function])));
         }
       }
 
