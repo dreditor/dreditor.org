@@ -68,7 +68,7 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
 
       // @TODO make this configurable or use contrib module.
       $output = shell_exec('/usr/bin/git pull 2>&1');
-      watchdog('github_webhook', 'Git pull for dreditor.org: <code>!code</code>', $output);
+      watchdog('github_webhook', 'Git pull for dreditor.org: <code>!code</code>', array('!code' => $output));
 
       // Enable modules.
       if (!empty($enable)) {
