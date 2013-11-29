@@ -26,7 +26,7 @@ INSTALLATION
 See http://drupal.org/getting-started/install-contrib for instructions on
 how to install or update Drupal modules.
 
-User picture support (admin/config/people/settings) must be enabled for Gravatar
+User picture support (admin/config/people/accounts) must be enabled for Gravatar
 to work. Once Gravatar is installed and enabled, you can configure the module
 at admin/config/people/gravatar.
 

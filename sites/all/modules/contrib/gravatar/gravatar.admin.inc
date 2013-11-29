@@ -82,6 +82,8 @@ function gravatar_admin_settings($form, $form_state) {
  * Add previews for each default picture option.
  */
 function gravatar_process_default_setting($element) {
+  global $base_url;
+
   $element[GRAVATAR_DEFAULT_GLOBAL]['#description'] = t('This setting can be adjusted in the <a href="@user-picture-link">user pictures settings</a>.', array('@user-picture-link' => url('admin/config/people/accounts', array('fragment' => 'edit-user-picture-default'))));
 
   // If the global user picture is empty, disable the respective option.
@@ -92,14 +94,22 @@ function gravatar_process_default_setting($element) {
 
   foreach ($element['#options'] as $key => $choice) {
     // Add an image to preview this default image option.
+    if ($key == GRAVATAR_DEFAULT_MODULE) {
+      $path = $base_url . '/' . drupal_get_path('module', 'gravatar') . '/avatar.png';
+    } else if ($key == GRAVATAR_DEFAULT_MODULE_CLEAR) {
+      $path = $base_url . '/' . drupal_get_path('module', 'gravatar') . '/avatar-clear.png';
+    } else {
+      $path = gravatar_get_gravatar(mt_rand(), array('default' => _gravatar_get_default_image($key), 'force default' => TRUE));
+    }
+
     $options = array(
-      'path' => gravatar_get_gravatar(mt_rand(), array('default' => _gravatar_get_default_image($key), 'force default' => TRUE)),
+      'path' => $path,
       'alt' => $choice,
       'title' => $choice,
       'attributes' => array(
         'id' => 'gravatar-imagepreview-'. $key,
         // Hide the image if the respective option is disabled.
-        'class' => $choice['#disabled'] ? 'hide' : 'js-hide',
+        'class' => isset($choice['#disabled']) && $choice['#disabled'] ? 'hide' : 'js-hide',
       ),
       'getsize' => FALSE,
     );

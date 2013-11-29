@@ -43,7 +43,7 @@ function gravatar_requirements($phase) {
   if ($phase == 'runtime') {
     // Warn if picture support is disabled.
     if (!variable_get('user_pictures', 0)) {
-      $notifications[] = t('Make sure <a href="@user-settings-link">user picture support</a> is enabled to allow gravatar integration.', array('@user-settings-link' => url('admin/config/people/settings', array('fragment' => 'edit-user-pictures-0-wrapper'))));
+      $notifications[] = t('Make sure <a href="@user-settings-link">user picture support</a> is enabled to allow gravatar integration.', array('@user-settings-link' => url('admin/config/people/accounts', array('fragment' => 'edit-personalization'))));
     }
 
     // Warn if no user roles have access to the 'user gravatar' permission.
@@ -64,7 +64,7 @@ function gravatar_requirements($phase) {
     if (!$global_default_image) {
       if (gravatar_var('default') == GRAVATAR_DEFAULT_GLOBAL) {
         // Warn if global default user picture is empty and used for default gravatar image.
-        $notifications[] = t('You have selected the global default user picture for the default gravatar picture, but you have not specified a <a href="@user-picture-link">global default user picture</a>.', array('@user-picture-link' => url('admin/config/people/settings', array('fragment' => 'edit-user-picture-default'))));
+        $notifications[] = t('You have selected the global default user picture for the default gravatar picture, but you have not specified a <a href="@user-picture-link">global default user picture</a>.', array('@user-picture-link' => url('admin/config/people/accounts', array('fragment' => 'edit-personalization'))));
       }
     }
     else {
@@ -73,7 +73,7 @@ function gravatar_requirements($phase) {
       $dimensions = explode('x', variable_get('user_picture_dimensions', '85x85'));
       if ($info && ($info[0] > $dimensions[0] || $info[1] > $dimensions[1])) {
         // @todo Create link to automatically resize image?
-        $notifications[] = t('Your <a href="@user-picture-link">global default user picture</a> is too large (@widthx@height pixels) and may not display properly. Please resize it to fit the <a href="@user-picture-settings-link">preferred user picture size</a> (@size pixels).', array('@width' => $info[0], '@height' => $info[1], '@user-picture-link' => $global_default_image, '@user-picture-settings-link' => url('admin/config/people/settings', array('fragment' => 'edit-user-picture-default')), '@size' => implode('x', $dimensions)));
+        $notifications[] = t('Your <a href="@user-picture-link">global default user picture</a> is too large (@widthx@height pixels) and may not display properly. Please resize it to fit the <a href="@user-picture-settings-link">preferred user picture size</a> (@size pixels).', array('@width' => $info[0], '@height' => $info[1], '@user-picture-link' => $global_default_image, '@user-picture-settings-link' => url('admin/config/people/accounts', array('fragment' => 'edit-personalization')), '@size' => implode('x', $dimensions)));
       }
     }
   }

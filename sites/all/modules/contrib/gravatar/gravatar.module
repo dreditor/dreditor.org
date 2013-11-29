@@ -94,7 +94,7 @@ function gravatar_help($path, $arg) {
   switch ($path) {
     //case 'admin/help#gravatar':
     case 'admin/config/people/gravatar':
-    case 'admin/config/people/settings':
+    case 'admin/config/people/accounts':
       module_load_install('gravatar');
       gravatar_check_requirements();
       break;
