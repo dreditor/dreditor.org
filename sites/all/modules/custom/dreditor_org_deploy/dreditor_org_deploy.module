@@ -39,6 +39,7 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
       foreach ($payload['commits'] as $commit) {
         // Parse commit messages for enabling/disabling of modules/themes.
         if (preg_match_all('/(dis|en)abled? (module|theme)s?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
+          object_log('commit matches', $matches);
           foreach ($matches as $match) {
             $extensions = explode(',', str_replace(' ', '', $match[3]));
             $function = $match[2] . '_' . $match[1] . 'able';
@@ -62,9 +63,6 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
             $modules = explode(',', str_replace(' ', '', $match[1]));
             if (!empty($modules)) {
               drupal_uninstall_modules($modules);
-              $response['messages'][] = t('Dreditor.org Deployment > Uninstalled the following modules: @list', array(
-                '@list' => implode(', ', $modules),
-              ));
             }
           }
         }
@@ -72,10 +70,11 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
 
       // @TODO make this configurable or use contrib module.
       $output = shell_exec('/usr/bin/git pull');
-      watchdog('github_webhook', 'Git pull for dreditor.org: <code>!code</code>', array('!code' => $output));
+      watchdog('github_webhook', 'Git pull for dreditor.org: <pre><code>!code</code></pre>', array('!code' => $output));
 
       // Enable modules.
       if (!empty($enable)) {
+        object_log('$enable', $enable);
         foreach ($enable as $function) {
           call_user_func_array($function, array(array_keys($enable[$function])));
         }
