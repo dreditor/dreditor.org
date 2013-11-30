@@ -51,7 +51,7 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
             if (drupal_strtolower($match[1]) === 'en') {
               foreach ($extensions as $extension) {
                 if (empty($enable[$function][$extension])) {
-                  $enable[$function][$extension] = TRUE;
+                  $enable[$function][$extension] = $extension;
                 }
               }
             }
@@ -77,8 +77,8 @@ function dreditor_org_deploy_github_webhook_event(array $payload, array &$respon
 
       // Enable modules.
       if (!empty($enable)) {
-        foreach ($enable as $function) {
-          call_user_func_array($function, array(array_keys($enable[$function])));
+        foreach ($enable as $function => $modules) {
+          call_user_func_array($function, array($modules));
         }
       }
 
