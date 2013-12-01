@@ -1,6 +1,75 @@
 <?php
 
 /**
+ * Implements hook_menu().
+ */
+function dreditor_org_deploy_menu() {
+  $items['admin/dreditor'] = array(
+    'title' => 'Dreditor.org',
+    'description' => 'Configure settings for Dreditor.org',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'system_admin_menu_block_page',
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/dreditor/github'] = array(
+    'title' => 'GitHub Integration',
+    'description' => 'Configure various GitHub settings used to integrate Dreditor.org.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dreditor_org_deploy_github_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'dreditor_org_deploy.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_cronapi().
+ */
+function dreditor_org_deploy_cronapi($op, $job = NULL) {
+
+  $items['dreditor_org_deploy_fetch_pull_requests'] = array(
+    'description' => 'Fetch pull requests',
+    'rule' => '* 0 * * *',
+    'callback' => 'dreditor_org_pulls',
+    'arguments' => array(TRUE),
+  );
+
+  return $items;
+}
+
+/**
+ * Helper function to wrap GitHub API requests with an access token.
+ */
+function _github_api($path, $options = array()) {
+  $request = drupal_http_request('https://api.github.com' . $path . '?access_token=' . variable_get('dreditor_org_github_access_token', ''), $options);
+  return drupal_json_decode($request->data);
+}
+
+/**
+ * Pull requests for dreditor/dreditor on GitHub.
+ *
+ * @param bool $fetch
+ *   Fetch from GitHub.
+ *
+ * @return array
+ *   A index array of pull requests.
+ */
+function dreditor_org_pulls($fetch = FALSE) {
+  $pulls = &drupal_static(__FUNCTION__);
+  if ($fetch || !isset($pulls)) {
+    if (($cache = cache_get('dreditor_org_pulls')) && !$fetch) {
+      $pulls = $cache->data;
+    }
+    else {
+      $pulls = _github_api('/repos/dreditor/dreditor/pulls');
+      cache_set('dreditor_org_pulls', $pulls);
+    }
+  }
+  return $pulls;
+}
+
+/**
  * Hook fired when a payload is received from a GitHub Service hook.
  *
  * @param array $payload
@@ -18,6 +87,7 @@
  * @see https://help.github.com/articles/post-receive-hooks
  */
 function dreditor_org_deploy_github_webhook_event(array $payload, array &$response, array $args) {
+  object_log('payload', $payload);
   if (!empty($payload['repository']['name'])) {
     // Tag detection.
     if (preg_match('/^refs\/tags\/(.*)/', $payload['ref'], $matches)) {
