@@ -113,7 +113,7 @@ class DrupalOAuth2Client extends DrupalOAuthClient {
       $url .= '?' . drupal_http_build_query($params);
     }
     $headers = array(
-      'Accept: application/x-www-form-urlencoded',
+      'Accept: application/json',
       $req->to_header($options['realm']),
     );
 
