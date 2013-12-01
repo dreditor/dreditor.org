@@ -88,6 +88,9 @@ function dreditor_org_pulls($fetch = FALSE) {
  */
 function dreditor_org_deploy_github_webhook_event(array $payload, array &$response, array $args) {
   object_log('payload', $payload);
+  object_log('$_POST', $_POST);
+  object_log('$_SERVER', $_SERVER);
+  object_log('$_REQUEST', $_REQUEST);
   if (!empty($payload['repository']['name'])) {
     // Tag detection.
     if (preg_match('/^refs\/tags\/(.*)/', $payload['ref'], $matches)) {
