@@ -37,3 +37,55 @@ function dreditor_theme_preprocess_menu_link(&$variables) {
     }
   }
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dreditor_theme_form_user_login_alter(&$form, &$form_state) {
+  $form['#attributes']['class'][] = 'fade collapse';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dreditor_theme_form_connector_button_form_alter(&$form, &$form_state) {
+  $form['#prefix'] = '<p>&nbsp;</p>';
+  $form['manual_login'] = array(
+    '#type' => 'button',
+    '#value' => t('Login with username/password'),
+    '#attributes' => array(
+      'class' => array(
+        'pull-left',
+        'manual-login',
+      ),
+      'data-toggle' => 'collapse',
+      'data-target' => '#user-login',
+    ),
+    '#prefix' => '<span class="pull-left lead text-muted or"> - ' . t('or') . ' - </span>',
+  );
+}
+
+/**
+ * Overrides theme_connector_buttons().
+ */
+function dreditor_theme_connector_buttons($variables) {
+
+  $form = $variables['form'];
+  if (!$form['#has_buttons']) {
+    return NULL;
+  }
+  foreach (element_children($form) as $key) {
+    if ($form[$key]['#type'] === 'submit' || $form[$key]['#type'] === 'button') {
+      $class = str_replace('_', '-', $key);
+      $form[$key]['#attributes']['class'][] = 'btn-lg';
+      $form[$key]['#attributes']['class'][] = 'pull-left';
+      $form[$key]['#attributes']['class'][] = $class;
+      if ($key === 'oauthconnector_github') {
+        $form[$key]['#value'] = theme('icon', array('bundle' => 'dreditor', 'icon' => 'dreditor-github')) . t('Login with GitHub');
+        $form[$key]['#attributes']['class'][] = 'btn-success';
+      }
+    }
+  }
+  return drupal_render_children($form);
+
+}
