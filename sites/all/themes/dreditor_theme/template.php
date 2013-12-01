@@ -49,20 +49,22 @@ function dreditor_theme_form_user_login_alter(&$form, &$form_state) {
  * Implements hook_form_FORM_ID_alter().
  */
 function dreditor_theme_form_connector_button_form_alter(&$form, &$form_state) {
-  $form['#prefix'] = '<p>&nbsp;</p>';
-  $form['manual_login'] = array(
-    '#type' => 'button',
-    '#value' => t('Login with username/password'),
-    '#attributes' => array(
-      'class' => array(
-        'pull-left',
-        'manual-login',
+  if (user_is_anonymous()) {
+    $form['#prefix'] = '<p>&nbsp;</p>';
+    $form['manual_login'] = array(
+      '#type' => 'button',
+      '#value' => t('Login with username/password'),
+      '#attributes' => array(
+        'class' => array(
+          'pull-left',
+          'manual-login',
+        ),
+        'data-toggle' => 'collapse',
+        'data-target' => '#user-login',
       ),
-      'data-toggle' => 'collapse',
-      'data-target' => '#user-login',
-    ),
-    '#prefix' => '<span class="pull-left lead text-muted or"> - ' . t('or') . ' - </span>',
-  );
+      '#prefix' => '<span class="pull-left lead text-muted or"> - ' . t('or') . ' - </span>',
+    );
+  }
 }
 
 /**
@@ -81,7 +83,7 @@ function dreditor_theme_connector_buttons($variables) {
       $form[$key]['#attributes']['class'][] = 'pull-left';
       $form[$key]['#attributes']['class'][] = $class;
       if ($key === 'oauthconnector_github') {
-        $form[$key]['#value'] = theme('icon', array('bundle' => 'dreditor', 'icon' => 'dreditor-github')) . t('Login with GitHub');
+        $form[$key]['#value'] = theme('icon', array('bundle' => 'dreditor', 'icon' => 'dreditor-github')) . (user_is_anonymous() ? t('Login with GitHub') : t('Connect your GitHub account'));
         $form[$key]['#attributes']['class'][] = 'btn-success';
       }
     }
