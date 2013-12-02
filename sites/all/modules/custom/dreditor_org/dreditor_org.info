@@ -3,6 +3,6 @@ description = Deployment code necessary for Dreditor.org to function.
 core = 7.x
 package = Dreditor
 version = 7.x-1.0
-project = dreditor_org_deploy
+project = dreditor_org
 dependencies[] = elysia-cron
 dependencies[] = github_webhook

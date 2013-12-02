@@ -1,0 +1,279 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function dreditor_org_menu() {
+  $items['admin/dreditor'] = array(
+    'title' => 'Dreditor.org',
+    'description' => 'Configure settings for Dreditor.org',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'system_admin_menu_block_page',
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/dreditor/github'] = array(
+    'title' => 'GitHub Integration',
+    'description' => 'Configure various GitHub settings used to integrate Dreditor.org.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dreditor_org_github_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'dreditor_org.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_cronapi().
+ */
+function dreditor_org_cronapi($op, $job = NULL) {
+
+  $items['dreditor_org_branches'] = array(
+    'description' => 'Sync branches for Dreditor from GitHub API.',
+    'rule' => '* 0 * * *',
+    'callback' => 'dreditor_org_branches',
+    'arguments' => array(TRUE),
+  );
+
+  $items['dreditor_org_pull_requests'] = array(
+    'description' => 'Sync pull requests for Dreditor from GitHub API.',
+    'rule' => '* 0 * * *',
+    'callback' => 'dreditor_org_pull_requests',
+    'arguments' => array(TRUE),
+  );
+
+  $items['dreditor_org_tags'] = array(
+    'description' => 'Sync tags for Dreditor from GitHub API.',
+    'rule' => '* 0 * * *',
+    'callback' => 'dreditor_org_tags',
+    'arguments' => array(TRUE),
+  );
+
+  return $items;
+}
+
+/**
+ * Helper function to wrap GitHub API requests with an access token.
+ *
+ * @param string $path
+ *   The REST path, relative to "https://api.github.com".
+ * @param array $options
+ *   An array of options to pass to drupal_http_request().
+ *
+ * @return array|FALSE
+ *   The JSON returned from GitHub, FALSE if an error occurred. All errors are
+ *   logged via watchdog.
+ */
+function _github_api($path, $options = array()) {
+  $json = FALSE;
+  $access_token = variable_get('dreditor_org_github_access_token', '');
+  if ($access_token) {
+    $request = drupal_http_request('https://api.github.com' . $path . '?access_token=' . $access_token, $options);
+    $code = substr($request->code, 0, 1);
+    if ($code !== '4' && $code !== '5') {
+      $json = drupal_json_decode($request->data);
+    }
+    else {
+      if (user_access('access administration pages')) {
+        drupal_set_message(t('An error occured while attempting to communicate with the Dreditor repository. The request has been saved to the logs.'), 'error', FALSE);
+      }
+      watchdog('dreditor_org', 'GitHub API Communication Error <pre><code>!request</code></pre>', array(
+        '!request' => str_replace($access_token, '!ACCESS_TOKEN', var_export($request, TRUE)),
+      ), WATCHDOG_CRITICAL);
+    }
+  }
+  else {
+    drupal_set_message(t('The access token needed to connect with the Dreditor repository on GitHub is missing. Please !configure this token and ensure the token provided belongs to an account with full admin privileges for the repository.', array(
+      '!configure' => l(t('configure'), 'admin/dreditor/github'),
+    )), 'error', FALSE);
+  }
+  return $json;
+}
+
+/**
+ * Branches for dreditor/dreditor on GitHub.
+ *
+ * @param bool $sync
+ *   Sync branches via GitHub API.
+ *
+ * @return array
+ *   An index array of pull requests.
+ */
+function dreditor_org_branches($sync = FALSE) {
+  $branches = &drupal_static(__FUNCTION__);
+  if ($sync || !isset($branches)) {
+    $branches = array();
+    if (($cache = cache_get('dreditor_org_branches')) && !$sync) {
+      $branches = $cache->data;
+    }
+    else {
+      if ($json = _github_api('/repos/dreditor/dreditor/branches')) {
+        foreach ($json as $branch) {
+          $branches[] = $branch['name'];
+        }
+        cache_set('dreditor_org_branches', $branches);
+      }
+    }
+  }
+  return $branches;
+}
+
+/**
+ * Pull requests for dreditor/dreditor on GitHub.
+ *
+ * @param bool $sync
+ *   Sync pull requests via GitHub API.
+ *
+ * @return array
+ *   An index array of pull requests.
+ */
+function dreditor_org_pull_requests($sync = FALSE) {
+  $pull_requests = &drupal_static(__FUNCTION__);
+  if ($sync || !isset($pull_requests)) {
+    if (($cache = cache_get('dreditor_org_pull_requests')) && !$sync) {
+      $pull_requests = $cache->data;
+    }
+    else {
+      if ($json = _github_api('/repos/dreditor/dreditor/pulls')) {
+        $pull_requests = $json;
+        cache_set('dreditor_org_pull_requests', $pull_requests);
+      }
+    }
+  }
+  return $pull_requests;
+}
+
+/**
+ * Tags for dreditor/dreditor on GitHub.
+ *
+ * @param bool $sync
+ *   Sync tags via GitHub API.
+ *
+ * @return array
+ *   An index array of tags.
+ */
+function dreditor_org_tags($sync = FALSE) {
+  $tags = &drupal_static(__FUNCTION__);
+  if ($sync || !isset($tags)) {
+    $tags = array();
+    if (($cache = cache_get('dreditor_org_tags')) && !$sync) {
+      $tags = $cache->data;
+    }
+    else {
+      if ($json = _github_api('/repos/dreditor/dreditor/tags')) {
+        foreach ($json as $tag) {
+          $tags[] = $tag['name'];
+        }
+        cache_set('dreditor_org_tags', $tags);
+      }
+    }
+  }
+  return $tags;
+}
+
+/**
+ * Hook fired when a payload is received from a GitHub Service hook.
+ *
+ * @param array $payload
+ *   The parsed JSON that was sent by GitHub.
+ * @param array &$response
+ *   An array containing the JSON response returned to the server that invoked
+ *   the webhook. The array is structured as follows:
+ *   - status: Either "ok" or "error".
+ *   - messages: An array of messages describing what happened.
+ *   - ...: Any additional data that you want to pass to the invoking server.
+ * @param array $args
+ *   The arguments that are passed through wildcards in the path.
+ * @param string|bool $event
+ *   The GitHub Service event name, FALSE if it cannot be determined.
+ *
+ * @see github_webhook_payload()
+ * @see https://help.github.com/articles/post-receive-hooks
+ * @see http://developer.github.com/v3/repos/hooks/#events
+ */
+function dreditor_org_github_webhook_event(array $payload, array &$response, array $args, $event) {
+  object_log($event . ': payload', $payload);
+  if ($event === 'push' && !empty($payload['repository']['name'])) {
+
+    // dreditor/dreditor.org
+    if ($payload['repository']['name'] === 'dreditor.org') {
+      $enable = array();
+      foreach ($payload['commits'] as $commit) {
+        // Skip revert commits.
+        if (strpos(drupal_strtolower($commit['message']), 'revert') !== FALSE) {
+          continue;
+        }
+        // Parse commit messages for enabling/disabling of modules/themes.
+        if (preg_match_all('/(dis|en)abled? (module|theme)s?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
+          foreach ($matches as $match) {
+            $extensions = explode(',', str_replace(' ', '', $match[3]));
+            $function = $match[2] . '_' . $match[1] . 'able';
+            // Save enables for later, until after the repository has been
+            // pulled.
+            if (drupal_strtolower($match[1]) === 'en') {
+              foreach ($extensions as $extension) {
+                if (empty($enable[$function][$extension])) {
+                  $enable[$function][$extension] = $extension;
+                }
+              }
+            }
+            else {
+              call_user_func_array($function, array($extensions));
+            }
+          }
+        }
+        // Parse commit messages for uninstalling modules.
+        if (preg_match_all('/uninstall modules?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
+          foreach ($matches as $match) {
+            $modules = explode(',', str_replace(' ', '', $match[1]));
+            if (!empty($modules)) {
+              drupal_uninstall_modules($modules);
+            }
+          }
+        }
+      }
+
+      // @TODO make this configurable or use contrib module.
+      $output = shell_exec('/usr/bin/git pull');
+      watchdog('github_webhook', 'Git pull for dreditor.org: <pre><code>!code</code></pre>', array('!code' => $output));
+
+      // Enable modules.
+      if (!empty($enable)) {
+        foreach ($enable as $function => $modules) {
+          call_user_func_array($function, array($modules));
+        }
+      }
+
+      // Flush all caches.
+      drupal_flush_all_caches();
+    }
+
+    // dreditor/dreditor
+    if ($payload['repository']['name'] === 'dreditor') {
+      if (preg_match('/^refs\/tags\/(.*)/', $payload['ref'], $matches)) {
+        $values = array(
+          '@name' => $payload['repository']['name'],
+          '@tag' => $matches[1],
+        );
+        if ($payload['created']) {
+          watchdog('github_webhook', 'A new tag was created on the "@name" repository: @tag', $values);
+        }
+        elseif ($payload['deleted']) {
+          watchdog('github_webhook', 'An existing tag was deleted on the "@name" repository: @tag', $values);
+        }
+      }
+      // Branch create/delete trigger.
+      if (
+        !empty($payload['ref']) &&
+        (
+          ($payload['created'] && $payload['before'] === '0000000000000000000000000000000000000000') ||
+          ($payload['deleted'] && $payload['after'] === '0000000000000000000000000000000000000000')
+        ) &&
+        preg_match('/^refs\/heads/', $payload['ref'])
+      ) {
+        dreditor_org_branches(TRUE);
+      }
+    }
+
+  }
+}
