@@ -9,8 +9,6 @@
  * Administrative settings form for application keys.
  */
 function dreditor_org_github_settings($form, &$form_state) {
-  $tags = dreditor_org_tags(TRUE);
-  dpm($tags);
   $form['dreditor_org_github_access_token'] = array(
     '#title' => t('Personal Access Token'),
     '#type' => 'textfield',

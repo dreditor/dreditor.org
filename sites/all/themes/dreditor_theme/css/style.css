@@ -2,13 +2,8 @@
   padding: 14px 16px;
   line-height: 1em;
 }
-.btn-icon .icon {
-  font-size: 140%;
-  margin-right: 0.3em;
-  margin-left: -0.3em;
-}
-.btn-lg .icon {
-  font-size: 175%;
+.btn .icon {
+  font-size: 150%;
   margin: -.65em .25em -.5em -.25em;
 }
 .menu .icon {
@@ -34,4 +29,23 @@ body.admin-menu.navbar-is-fixed-top {
 }
 .or {
   margin: .5em 1em;
+}
+input:focus,button:focus,.btn:focus,.form-control:focus,textarea:focus,a:focus {
+  outline: 0;
+}
+.block.jumbotron {
+  position: relative;
+  overflow: hidden;
+}
+.block.jumbotron > .icon {
+  position: absolute;
+  bottom: .1em;
+  right: .25em;
+  top: inherit;
+  font-size: 1000%;
+  -moz-transform: rotate(25deg);
+  -webkit-transform: rotate(25deg);
+  transform: rotate(25deg);
+  opacity: .05;
+  z-index: 0;
 }
