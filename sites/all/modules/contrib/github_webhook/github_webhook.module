@@ -94,8 +94,9 @@ function github_webhook_token() {
 function github_webhook_access() {
   $payload = github_webhook_payload();
   $args = func_get_args();
+  $event = isset($_SERVER['HTTP_X_GITHUB_EVENT']) ? $_SERVER['HTTP_X_GITHUB_EVENT'] : FALSE;
 
-  $access = module_invoke_all('github_webhook_access', $payload, $args);
+  $access = module_invoke_all('github_webhook_access', $payload, $args, $event);
   if (in_array(FALSE, $access, TRUE)) {
     return FALSE;
   }

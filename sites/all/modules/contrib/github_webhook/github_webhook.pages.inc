@@ -27,10 +27,11 @@ function github_webhook_endpoint() {
       'status' => 'ok',
       'messages' => array(),
     );
+    $event = isset($_SERVER['HTTP_X_GITHUB_EVENT']) ? $_SERVER['HTTP_X_GITHUB_EVENT'] : FALSE;
 
     foreach (module_implements('github_webhook_event') as $module) {
       $function = $module . '_github_webhook_event';
-      $function($payload, $response, $args);
+      $function($payload, $response, $args, $event);
     }
   }
   catch (Exception $e) {

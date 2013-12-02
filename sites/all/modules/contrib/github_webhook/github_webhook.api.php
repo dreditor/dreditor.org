@@ -21,11 +21,17 @@
  *   The parsed JSON that was sent by GitHub.
  * @param array $args
  *   The arguments that are passed through wildcards in the path.
+ * @param string|bool $event
+ *   The GitHub Service event name, FALSE if it cannot be determined.
+ *
+ * @see http://developer.github.com/v3/repos/hooks/#events
  *
  * @return bool|NULL
  */
-function hook_github_webhook_access(array $payload, array $args) {
-  return FALSE; // Deny access for some reason.
+function hook_github_webhook_access(array $payload, array $args, $event) {
+  if ($event !== 'pull_request') {
+    return FALSE; // Deny access for some reason.
+  }
 }
 
 /**
@@ -41,11 +47,14 @@ function hook_github_webhook_access(array $payload, array $args) {
  *   - ...: Any additional data that you want to pass to the invoking server.
  * @param array $args
  *   The arguments that are passed through wildcards in the path.
+ * @param string|bool $event
+ *   The GitHub Service event name, FALSE if it cannot be determined.
  *
  * @see github_webhook_payload()
  * @see https://help.github.com/articles/post-receive-hooks
+ * @see http://developer.github.com/v3/repos/hooks/#events
  */
-function hook_github_webhook_event(array $payload, array &$response, array $args) {
+function hook_github_webhook_event(array $payload, array &$response, array $args, $event) {
   $commits = 0;
   foreach ($payload['commits'] as $commit) {
     $commits++;
