@@ -16,119 +16,186 @@
     userAgent = userAgent.substring(0,userAgent.indexOf('.'));
     $.browser.version = userAgent;
   }
+  else if ($.browser.mozilla) {
+    var FF_HASH;
+    $.getJSON('/ajax/dreditor/ff-hash', function (json) {
+      FF_HASH = json.hash;
+    });
+  }
   
   var prodTag, prodBranch = '1';
-  
-  // Dyanmically determine the latest tagged release.
-  $.getJSON('https://api.github.com/repos/dreditor/dreditor/tags', function (json) {
-    for (var i = 0; i < json.length; i++) {
-      if (json[i].name[0] === prodBranch) {
-        prodTag = json[i].name;
-        break;
+
+  // Get the latest tag.
+  $.getJSON('/ajax/dreditor/tags', function (json) {
+    if (json.tags) {
+      for (var i = 0; i < json.tags.length; i++) {
+        if (json.tags[i][0] === prodBranch && !json.tags[i].match(/beta|alpha|dev|rc/)) {
+          prodTag = json.tags[i];
+          break;
+        }
       }
     }
   })
   .fail(function () {
     // Manually set a fall back production tag.
-    prodTag = '1.2.1';
+    prodTag = '1.2.4';
   })
   .complete(function () {
     $(document).ready(function () {
-      $('body').once('dreditor-install', function () {
-        var loadingText = 'Downloading Dreditor ' + prodTag + ' ...';
-        var installText = 'Download Dreditor ' + prodTag;
-        var installedText = 'Dreditor is installed. Click to re-install or update to Dreditor ' + prodTag;
-        var successText = 'Successfully downloaded Dreditor ' + prodTag + '!';
-        if ($.browser.chrome) {
-          installText = 'Install the Dreditor ' + prodTag + ' Chrome extension';
-          installedText = 'Dreditor Chrome extension is installed <small>(updates managed via Chrome)</small>';
-          loadingText = 'Installing the Dreditor ' + prodTag + ' Chrome extension...';
-          successText = 'Successfully installed the Dreditor ' + prodTag + ' Chrome extension!';
-        }
-        else if ($.browser.safari) {
-          installText = 'Download the Dreditor ' + prodTag + ' Safari extension';
-          installedText = 'Dreditor Safari extension is installed <small>(updates managed via Safari)</small>';
-          loadingText = 'Downloading the Dreditor ' + prodTag + ' Safari extension ...';
-          successText = 'Successfully downloaded Dreditor ' + prodTag + ' Safari extension!<br /><small>(Double-click the Safari extension to install it)</small>';
-        }
-        var $button = $('#install-dreditor').attr({
-          'data-loading-text': loadingText,
-          'data-install-text': installText,
-          'data-installed-text': installedText,
-          'data-success-text': successText,
-          'data-fail-text': 'Installing Dreditor ' + prodTag + ' failed. Try Again!'
-        });
-        var icon = '<i aria-hidden="true" class="icon fontello"></i>';
-        
-        Drupal.behaviors.dreditorInstall = {
-          attach: function(context, settings) {
-            if ($('#dreditor-is-installed').length) {
-              if ($button.length && ($.browser.chrome || $.browser.safari)) {
-                $button
-                  .html($button.data('installed-text'))
-                  .removeClass('btn-primary btn-success btn-danger')
-                  .addClass('btn-success disabled')
-                  .attr('disabled', true)
-                  .prepend($(icon).addClass('dreditor-checkmark'));
+      setTimeout(function () {
+        $('body').once('dreditor-install', function () {
+          Drupal.behaviors.dreditorInstall = {
+            attach: function(context, settings) {
+              var autoupdate = false;
+              var browserIcon = 'arrow-down';
+              var browser = '';
+              if ($.browser.chrome) {
+                browser = 'Chrome';
               }
-              else if ($button.length) {
-                $button
-                  .button('installed')
-                  .removeClass('btn-primary btn-success btn-danger')
-                  .addClass('btn-success')
-                  .prepend($(icon).addClass('dreditor-checkmark'));
+              else if ($.browser.mozilla) {
+                browser = 'Firefox';
               }
-            }
-            else if ($button.length) {
-              $button
-                .button('install')
-                .prepend($(icon).addClass('dreditor-arrow-down'));
-            }
-          }
-        }
+              else if ($.browser.safari) {
+                  browser = 'Safari';
+                }
+              if (browser.length) {
+                browserIcon = browser.toLowerCase();
+              }
 
-        $button.on('click', function (e) {
-          $button
-            .button('loading')
-            .removeClass('btn-success btn-danger')
-            .addClass('btn-primary');
-            
-          // Chrome extension.
-          if ($.browser.chrome) {
-            chrome.webstore.install('https://chrome.google.com/webstore/detail/dhdpoembhlojpmehepeadblhglloobao', function () {
-              $button
-                .button('success')
-                .removeClass('btn-primary btn-success btn-danger')
-                .addClass('btn-success')
-                .prepend($(icon).addClass('dreditor-checkmark'));
-            },
-            function () {
-              $button
-                .button('fail')
-                .removeClass('btn-primary btn-success btn-danger')
-                .addClass('btn-danger')
-                .prepend($(icon).addClass('dreditor-blocked'));
-            });
+              var installedVersion = false;
+              if (Drupal.dreditor && Drupal.dreditor.version) {
+                installedVersion = Drupal.dreditor.version;
+              }
+              else if (Drupal.dreditor) {
+                installedVersion = "0.0.1";
+              }
+
+              var disabled = false;
+              var error = false;
+
+              var installText = 'Install Dreditor ' + prodTag + (browser ? ' for ' + browser : '');
+              var loadingText = 'Downloading Dreditor ' + prodTag + ' ...';
+              var updateText = 'Dreditor ' + installedVersion + ' installed';
+
+              if (installedVersion === "0.0.1") {
+                installText = 'Old version of Dreditor installed. Please remove the old user script and reload this page.';
+                disabled = true;
+                error = true;
+                browserIcon = 'blocked';
+              }
+              else if (installedVersion >= prodTag) {
+                updateText = 'Dreditor ' + installedVersion + ' is installed and up to date.';
+                disabled = true;
+              }
+              var successText = 'Successfully installed Dreditor ' + prodTag + '!';
+
+              var $button = $('#install-dreditor').attr({
+                'data-install-text': installText,
+                'data-loading-text': loadingText,
+                'data-update-text': updateText,
+                'data-success-text': successText,
+                'data-fail-text': 'Installing Dreditor ' + prodTag + ' failed. Try Again!'
+              });
+              var icon = '<i aria-hidden="true" class="icon fontello"></i>';
+
+              if ($button.length) {
+                if (installedVersion) {
+                  if (installedVersion === '0.0.1') {
+                    $button.html($button.data('install-text'));
+                  }
+                  else {
+                    $button.html($button.data('update-text'));
+                  }
+                  $button
+                    .removeClass('btn-primary btn-success btn-danger')
+                    .prepend($(icon).addClass('dreditor-checkmark'));
+
+                  if (disabled) {
+                    $button.addClass('disabled').attr('disabled', 'disabled');
+                  }
+                  if (error) {
+                    $button.addClass('btn-danger');
+                  }
+                  else {
+                    $button.addClass('btn-success');
+                  }
+                }
+                else {
+                  $button
+                    .button('install')
+                    .prepend($(icon).addClass('dreditor-' + browserIcon));
+                }
+                $button.on('click', function (e) {
+                  $button
+                    .button('loading')
+                    .removeClass('btn-success btn-danger')
+                    .addClass('btn-primary');
+
+                  // Chrome extension.
+                  if ($.browser.chrome) {
+                    chrome.webstore.install('https://chrome.google.com/webstore/detail/dhdpoembhlojpmehepeadblhglloobao', function () {
+                        $button
+                          .button('success')
+                          .removeClass('btn-primary btn-danger')
+                          .addClass('btn-success disabled')
+                          .prepend($(icon).addClass('dreditor-checkmark'));
+                      },
+                      function () {
+                        $button
+                          .button('fail')
+                          .removeClass('btn-primary btn-success')
+                          .addClass('btn-danger')
+                          .prepend($(icon).addClass('dreditor-blocked'));
+                      });
+                  }
+                  // Firefox extension.
+                  else if ($.browser.mozilla) {
+                    var params = {
+                      'dreditor': {
+                        URL: '/dreditor.xpi',
+                        IconURL: '/sites/all/themes/dreditor_theme/logo.png',
+                        Hash: FF_HASH,
+                        toString: function () { return '/dreditor.xpi'; }
+                      }
+                    };
+                    InstallTrigger.install(params, function xpinstallCallback(url, status){
+                      if (status === 0) {
+                        $button
+                          .html($button.data('success-text'))
+                          .removeClass('btn-primary btn-danger')
+                          .addClass('btn-success disabled')
+                          .attr('disabled', true)
+                          .prepend($(icon).addClass('dreditor-checkmark'));
+                      }
+                      else {
+                        $button
+                          .button('fail')
+                          .removeClass('btn-primary btn-success')
+                          .addClass('btn-danger')
+                          .prepend($(icon).addClass('dreditor-blocked'));
+                      }
+                    });
+
+                  }
+                  // Safari extension.
+                  else if ($.browser.safari) {
+                      window.location = '/dreditor.safariextz';
+                      $button
+                        .html($button.data('success-text'))
+                        .removeClass('btn-primary btn-danger')
+                        .addClass('btn-success disabled')
+                        .attr('disabled', true)
+                        .prepend($(icon).addClass('dreditor-checkmark'));
+                    }
+                  e.preventDefault();
+                });
+              }
+            }
           }
-          // Safari extension.
-          else if ($.browser.safari) {
-            window.location = '/Dreditor.safariextz';
-            $button
-              .html($button.data('success-text'))
-              .addClass('disabled')
-              .attr('disabled', true)
-              .prepend($(icon).addClass('dreditor-checkmark'));
-          }
-          // The rest of browsers must navigate to the raw user-script.
-          else {
-            window.location = 'https://github.com/dreditor/dreditor/raw/' + prodTag + '/dreditor.user.js';
-          }
-          e.preventDefault();
+          Drupal.attachBehaviors($(this));
         });
-        
-        Drupal.attachBehaviors($(this));
-      });
+      }, 1000);
     });
   });
-  
+
 })(jQuery);

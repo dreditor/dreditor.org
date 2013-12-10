@@ -50,6 +50,14 @@ function dreditor_org_menu() {
     'type' => MENU_NORMAL_ITEM,
     'weight' => 10,
   );
+  $items['ajax/dreditor/%'] = array(
+    'title' => 'Automated Builds',
+    'page callback' => 'dreditor_org_ajax',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    'file' => 'dreditor_org.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 

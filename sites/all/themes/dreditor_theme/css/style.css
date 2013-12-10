@@ -6,6 +6,19 @@
   font-size: 150%;
   margin: -.65em .25em -.5em -.25em;
 }
+.btn .icon.glyphicon-refresh {
+  margin: -0.4em 0.3em 0 -0.3em;
+  float: left;
+  position: relative;
+  top: .15em;
+}
+.glyphicon-refresh {
+  -webkit-transform-origin: 50% 50%;
+  -moz-transform-origin: 50% 50%;
+  -ms-transform-origin: 50% 50%;
+  -o-transform-origin: 50% 50%;
+  transform-origin: 50% 50%;
+}
 .menu .icon {
   line-height: 1em;
   margin-left: -0.5em;

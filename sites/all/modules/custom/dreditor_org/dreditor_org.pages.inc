@@ -5,6 +5,21 @@
  */
 
 /**
+ * Menu callback for "ajax/dreditor/%".
+ */
+function dreditor_org_ajax($action) {
+  $json = array();
+  if ($action === 'tags') {
+    $json['tags'] = dreditor_org_tags();
+  }
+  if ($action === 'ff-hash') {
+    $json['hash'] = 'sha1:' . sha1_file(DRUPAL_ROOT . '/dreditor.xpi');
+  }
+  drupal_json_output($json);
+  ajax_footer();
+}
+
+/**
  * Page callback for "development/contributing".
  *
  * Pulls directly from the repository's CONTRIBUTING.md file.
