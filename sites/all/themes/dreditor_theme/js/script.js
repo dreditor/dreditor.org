@@ -73,7 +73,7 @@
                   else if (Drupal.dreditor) {
                     installedVersion = '0.0.1';
                   }
-                  if ($.browser.mozilla && installedVersion === '1.2.3') {
+                  if ($.browser.mozilla && installedVersion <= '1.2.3') {
                     installedVersion = '0.0.1';
                   }
 
@@ -89,7 +89,7 @@
                   }
 
                   if (installedVersion === "0.0.1") {
-                    installText = 'Old version of Dreditor installed. Please remove the old user script and reload this page.';
+                    installText = 'An old GreaseMonkey user script version of Dreditor is installed.<br /><small>(Remove the GreaseMonkey user script and reload this page)</small>.';
                     disabled = true;
                     error = true;
                     browserIcon = 'blocked';
