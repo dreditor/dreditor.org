@@ -96,6 +96,9 @@
                     disabled = true;
                   }
                   var successText = 'Successfully installed Dreditor ' + prodTag + '!';
+                  if ($.browser.safari) {
+                    successText = 'Downloaded Dreditor ' + prodTag + ' ' + browser + ' extension<br /><small>(double-click extension downloaded to install)</small>';
+                  }
 
                   $button.attr({
                     'data-install-text': installText,
