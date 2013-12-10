@@ -71,7 +71,10 @@
                     installedVersion = Drupal.dreditor.version;
                   }
                   else if (Drupal.dreditor) {
-                    installedVersion = "0.0.1";
+                    installedVersion = '0.0.1';
+                  }
+                  if ($.browser.mozilla && installedVersion === '1.2.3') {
+                    installedVersion = '0.0.1';
                   }
 
                   var disabled = false;
@@ -119,10 +122,13 @@
                       }
                       $button
                         .removeClass('btn-primary btn-success btn-danger')
-                        .prepend($(icon).addClass('dreditor-checkmark'));
+                        .prepend($(icon).addClass('dreditor-' + browserIcon));
 
                       if (disabled) {
                         $button.addClass('disabled').attr('disabled', 'disabled');
+                      }
+                      else {
+                        $button.removeClass('disabled').removeAttr('disabled');
                       }
                       if (error) {
                         $button.addClass('btn-danger');
