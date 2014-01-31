@@ -48,7 +48,8 @@ function dreditor_review_callback() {
   if ($method === 'OPTIONS') {
     // Leave blank on purpose.
   }
-  elseif ($method === 'GET') {
+  // Ensure GET method and check for appropriate referrer, if there is one.
+  elseif ($method === 'GET' && (empty($_SERVER['HTTP_REFERER']) || preg_match('/https?\:\/\/([^\.]+[\.])?(drupal|dreditor)\.org/', $_SERVER['HTTP_REFERER']))) {
     $callback = !empty($_GET['callback']) ? $_GET['callback'] : FALSE;
     $gzip = strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
     $html = !empty($_GET['html']) ? TRUE : FALSE;
@@ -109,8 +110,6 @@ function dreditor_review_callback() {
         // Add necessary headers.
         drupal_add_http_header('Content-Length', strlen($output));
         drupal_add_http_header('Content-Type', ($html ? 'text/html' : 'application/json') . '; charset=utf-8');
-        drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
-        watchdog('dreditor_review', '<pre>' . var_export($_SERVER, TRUE) . '</pre>');
       }
     }
   }
