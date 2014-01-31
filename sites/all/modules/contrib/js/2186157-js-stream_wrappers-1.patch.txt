@@ -1,0 +1,37 @@
+From ca01e62201c92a827f9c5647cbf60b2a62815d1b Mon Sep 17 00:00:00 2001
+From: Mark Carver <mark.carver@me.com>
+Date: Fri, 31 Jan 2014 07:54:44 -0600
+Subject: [PATCH] Issue #2186157 by Mark Carver: StreamWrappers not in
+ system.module not loaded.
+
+---
+ js.php | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/js.php b/js.php
+index 88c9792..dbb63f2 100644
+--- a/js.php
++++ b/js.php
+@@ -177,9 +177,6 @@ function js_execute_callback() {
+     // Undo magic quotes.
+     fix_gpc_magic();
+ 
+-    // Make sure all stream wrappers are registered.
+-    file_get_stream_wrappers();
+-
+     // Load required modules.
+     $modules = array($module => 0);
+     if (isset($valid_callbacks[$callback]['dependencies']) && is_array($valid_callbacks[$callback]['dependencies'])) {
+@@ -211,6 +208,9 @@ function js_execute_callback() {
+     // Reset module list.
+     module_list(FALSE, TRUE, FALSE, $modules);
+ 
++    // Make sure all stream wrappers are registered.
++    file_get_stream_wrappers();
++
+     // Ensure the language variable is set, if not it might cause problems (e.g.
+     // entity info).
+     global $language;
+-- 
+1.8.5.3
+
