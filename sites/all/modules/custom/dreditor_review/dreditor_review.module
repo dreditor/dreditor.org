@@ -41,73 +41,86 @@ function dreditor_review_cron() {
  * Menu callback for 'review'.
  */
 function dreditor_review_callback() {
-  $callback = !empty($_GET['callback']) ? $_GET['callback'] : FALSE;
-  $gzip = strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
-  $html = !empty($_GET['html']) ? TRUE : FALSE;
-  $json = array();
-  $rebuild = !empty($_GET['rebuild']) ? TRUE : FALSE;
   $output = '{}';
-  if (!empty($_GET['file'])) {
-    $url = 'https://drupal.org' . $_GET['file'];
-    $output = '';
-    $url_info = parse_url($_GET['file']);
-    $path_info = pathinfo($url_info['path']);
+  $method = $_SERVER['REQUEST_METHOD'];
+  drupal_add_http_header('Access-Control-Allow-Origin', 'https://drupal.org');
+  drupal_add_http_header('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  if ($method === 'OPTIONS') {
+    // Leave blank on purpose.
+  }
+  elseif ($method === 'POST') {
+    $callback = !empty($_GET['callback']) ? $_GET['callback'] : FALSE;
+    $gzip = strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
+    $html = !empty($_GET['html']) ? TRUE : FALSE;
+    $json = array();
+    $rebuild = !empty($_GET['rebuild']) ? TRUE : FALSE;
+    if (!empty($_GET['file'])) {
+      $url = 'https://drupal.org' . $_GET['file'];
+      $output = '';
+      $url_info = parse_url($_GET['file']);
+      $path_info = pathinfo($url_info['path']);
 
-    // Ensure provided file is a patch.
-    if (in_array($path_info['extension'], array('patch', 'diff', 'txt'))) {
-      $dir = 'public://review';
-      file_prepare_directory($dir, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
-      $patch_file = $dir . '/' . $path_info['basename'];
-      $html_file = $patch_file . '.html';
-      $json_file = $patch_file . '.json';
+      // Ensure provided file is a patch.
+      if (in_array($path_info['extension'], array('patch', 'diff', 'txt'))) {
+        $dir = 'public://review';
+        file_prepare_directory($dir, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+        $patch_file = $dir . '/' . $path_info['basename'];
+        $html_file = $patch_file . '.html';
+        $json_file = $patch_file . '.json';
 
-      // Create JSON file, if needed.
-      if ($rebuild || !file_exists($json_file) || !file_exists($html_file)) {
-        // Build HTML file.
-        if ($rebuild || !file_exists($html_file)) {
-          // Download patch file.
-          $request = drupal_http_request($url);
-          if ($request->code === '200' && $request->headers['content-type'] === 'text/plain; charset=utf-8') {
-            file_unmanaged_save_data($request->data, $patch_file, FILE_EXISTS_REPLACE);
+        // Create JSON file, if needed.
+        if ($rebuild || !file_exists($json_file) || !file_exists($html_file)) {
+          // Build HTML file.
+          if ($rebuild || !file_exists($html_file)) {
+            // Download patch file.
+            $request = drupal_http_request($url);
+            if ($request->code === '200' && $request->headers['content-type'] === 'text/plain; charset=utf-8') {
+              file_unmanaged_save_data($request->data, $patch_file, FILE_EXISTS_REPLACE);
+            }
+            // Parse the patch file into HTML.
+            $json['diff_stats'] = dreditor_review_parse_file($patch_file, $html_file);
+            // Delete original patch file.
+            file_unmanaged_delete($patch_file);
           }
-          // Parse the patch file into HTML.
-          $json['diff_stats'] = dreditor_review_parse_file($patch_file, $html_file);
-          // Delete original patch file.
-          file_unmanaged_delete($patch_file);
+          // Build JSON file.
+          if ($rebuild || (!$html && !file_exists($json_file))) {
+            // Construct the JSON data to be sent.
+            $json['content'] = file_get_contents($html_file);
+            // Create JSON file.
+            file_put_contents($json_file, drupal_json_encode($json));
+          }
         }
-        // Build JSON file.
-        if ($rebuild || (!$html && !file_exists($json_file))) {
-          // Construct the JSON data to be sent.
-          $json['content'] = file_get_contents($html_file);
-          // Create JSON file.
-          file_put_contents($json_file, drupal_json_encode($json));
+
+        // Get JSON file.
+        $output = file_get_contents($html ? $html_file : $json_file);
+
+        // Wrap with callback, if necessary.
+        if (!$html && $callback) {
+          $output = $callback . '(' . $output . ')';
         }
+
+        // GZIP encode output, if browser supports it.
+        if ($gzip) {
+          $output = gzencode($output, 9);
+          drupal_add_http_header('Content-Encoding', 'gzip');
+          drupal_add_http_header('Vary', 'Accept-Encoding');
+        }
+
+        // Add necessary headers.
+        drupal_add_http_header('Content-Length', strlen($output));
+        drupal_add_http_header('Content-Type', ($html ? 'text/html' : 'application/json') . '; charset=utf-8');
+        dpm($_SERVER);
       }
-
-      // Get JSON file.
-      $output = file_get_contents($html ? $html_file : $json_file);
-
-      // Wrap with callback, if necessary.
-      if (!$html && $callback) {
-        $output = $callback . '(' . $output . ')';
-      }
-
-      // GZIP encode output, if browser supports it.
-      if ($gzip) {
-        $output = gzencode($output, 9);
-        drupal_add_http_header('Content-Encoding', 'gzip');
-        drupal_add_http_header('Vary', 'Accept-Encoding');
-      }
-
-      // Add necessary headers.
-      drupal_add_http_header('Access-Control-Allow-Origin', 'https://drupal.org');
-      drupal_add_http_header('Content-Length', strlen($output));
-      drupal_add_http_header('Content-Type', ($html ? 'text/html' : 'application/json') . '; charset=utf-8');
     }
+  }
+  else {
+    header('HTTP/1.1 405 Method Not Allowed', TRUE, 405);
+    drupal_add_http_header('Content-Length', strlen($output));
+    drupal_add_http_header('Content-Type', 'application/json; charset=utf-8');
   }
   // Print output.
   echo $output;
-  drupal_exit();
+  exit();
 }
 
 /**
