@@ -18,7 +18,7 @@ function dreditor_review_js() {
  * Implements hook_menu().
  */
 function dreditor_review_menu() {
-  $items['js/review'] = array(
+  $items['js/dreditor_review/parse'] = array(
     'title' => 'Profile',
     'description' => 'My Profile',
     'page callback' => 'dreditor_review_callback',
