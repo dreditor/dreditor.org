@@ -1,0 +1,7 @@
+name = Dreditor Review
+description = Parses patches for review
+core = 7.x
+package = Dreditor
+version = 7.x-1.0
+project = dreditor_review
+dependencies[] = js
