@@ -44,11 +44,11 @@ function dreditor_review_callback() {
   $output = '{}';
   $method = $_SERVER['REQUEST_METHOD'];
   drupal_add_http_header('Access-Control-Allow-Origin', 'https://drupal.org');
-  drupal_add_http_header('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  drupal_add_http_header('Access-Control-Allow-Methods', 'GET,OPTIONS');
   if ($method === 'OPTIONS') {
     // Leave blank on purpose.
   }
-  elseif ($method === 'POST') {
+  elseif ($method === 'GET') {
     $callback = !empty($_GET['callback']) ? $_GET['callback'] : FALSE;
     $gzip = strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
     $html = !empty($_GET['html']) ? TRUE : FALSE;
