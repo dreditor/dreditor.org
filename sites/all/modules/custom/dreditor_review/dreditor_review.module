@@ -109,7 +109,8 @@ function dreditor_review_callback() {
         // Add necessary headers.
         drupal_add_http_header('Content-Length', strlen($output));
         drupal_add_http_header('Content-Type', ($html ? 'text/html' : 'application/json') . '; charset=utf-8');
-        dpm($_SERVER);
+        drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+        watchdog('dreditor_review', '<pre>' . var_export($_SERVER, TRUE) . '</pre>');
       }
     }
   }
