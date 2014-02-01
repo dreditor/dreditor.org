@@ -146,7 +146,7 @@ function dreditor_review_parse_file($source, $destination) {
     while (($line = fgets($sh, 4096)) !== FALSE) {
       $ln1o = TRUE;
       $ln2o = TRUE;
-      $line = rtrim($line);
+      $line = htmlentities(rtrim($line), NULL, 'utf-8', FALSE);
       if (preg_match('/^From:? [\da-z]{40}/', $line)) {
         if ($in_diff_stats) {
           fwrite($dh, '</div>' . PHP_EOL);
