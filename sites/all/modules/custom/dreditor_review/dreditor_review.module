@@ -184,8 +184,8 @@ function dreditor_review_parse_file($source, $destination) {
         fwrite($dh, '<table class="dr dr--diff">' . PHP_EOL);
         fwrite($dh, '  <tbody>' . PHP_EOL);
         if (preg_match('/^@@ -([0-9]+),[0-9]+ \+([0-9]+),[0-9]+ @@/', $line, $matches)) {
-          $ln1 = $matches[1];
-          $ln2 = $matches[2];
+          $ln1 = $matches[1] - 1;
+          $ln2 = $matches[2] - 1;
         }
         $in_format_patch = FALSE;
         $in_diff_stats = FALSE;
