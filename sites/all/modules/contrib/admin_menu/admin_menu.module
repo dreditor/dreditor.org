@@ -275,8 +275,8 @@ function admin_menu_js() {
   return array(
     'cache' => array(
       'callback' => 'admin_menu_js_cache',
-      'includes' => array('common', 'theme', 'unicode'),
-      'dependencies' => array('devel', 'filter', 'user'),
+      'includes' => array('path'),
+      'access arguments' => array('access administration menu'),
     ),
   );
 }
@@ -365,8 +365,9 @@ function admin_menu_js_cache() {
   drupal_add_http_header('Expires', gmdate(DATE_RFC1123, REQUEST_TIME + $max_age));
   drupal_add_http_header('Cache-Control', 'private, max-age=' . $max_age);
 
-  // Retrieve and return the rendered menu.
-  return admin_menu_output();
+  // Retrieve and output the rendered menu.
+  print admin_menu_output();
+  exit;
 }
 
 /**
