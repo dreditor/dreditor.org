@@ -99,7 +99,7 @@ function dreditor_review_callback() {
       $patch_file = $dir . '/' . $filename;
       $html_file = $dir . '/' . $filename . '.html';
 
-      if ($rebuild || (empty($json[$filename]) && file_exists($html_file))) {
+      if ($rebuild || (empty($json['files'][$filename]) && file_exists($html_file))) {
         file_unmanaged_delete($html_file);
       }
 
@@ -115,8 +115,8 @@ function dreditor_review_callback() {
         }
 
         // Parse the patch file into HTML.
-        if ($rebuild || empty($json[$filename])) {
-          $json[$filename] = array(
+        if ($rebuild || empty($json['files'][$filename])) {
+          $json['files'][$filename] = array(
             'urls' => array(
               'patch' => file_create_url($url),
               'html' => file_create_url($html_file),
