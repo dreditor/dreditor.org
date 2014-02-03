@@ -123,7 +123,7 @@ function dreditor_review_callback() {
             ),
           );
           $stats = dreditor_review_parse_file($patch_file, $html_file);
-          $json[$filename] += $stats;
+          $json['files'][$filename] += $stats;
           // Trigger save after.
           $json_updated = TRUE;
         }
