@@ -171,7 +171,7 @@
                           'dreditor': {
                             URL: '/dreditor.xpi',
                             IconURL: '/sites/all/themes/dreditor_theme/logo.png',
-                            Hash: FF_HASH,
+                            hash: FF_HASH,
                             toString: function () { return '/dreditor.xpi'; }
                           }
                         };
