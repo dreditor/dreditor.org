@@ -319,59 +319,6 @@ function dreditor_org_github_webhook_event(array $payload, array &$response, arr
   object_log($event . ': payload', $payload);
   if ($event === 'push' && !empty($payload['repository']['name'])) {
 
-    // dreditor/dreditor.org
-    if ($payload['repository']['name'] === 'dreditor.org') {
-      $enable = array();
-      foreach ($payload['commits'] as $commit) {
-        // Skip revert commits.
-        if (strpos(drupal_strtolower($commit['message']), 'revert') !== FALSE) {
-          continue;
-        }
-        // Parse commit messages for enabling/disabling of modules/themes.
-        if (preg_match_all('/(dis|en)abled? (module|theme)s?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
-          foreach ($matches as $match) {
-            $extensions = explode(',', str_replace(' ', '', $match[3]));
-            $function = $match[2] . '_' . $match[1] . 'able';
-            // Save enables for later, until after the repository has been
-            // pulled.
-            if (drupal_strtolower($match[1]) === 'en') {
-              foreach ($extensions as $extension) {
-                if (empty($enable[$function][$extension])) {
-                  $enable[$function][$extension] = $extension;
-                }
-              }
-            }
-            else {
-              call_user_func_array($function, array($extensions));
-            }
-          }
-        }
-        // Parse commit messages for uninstalling modules.
-        if (preg_match_all('/uninstall modules?:?(.+)/i', $commit['message'], $matches, PREG_SET_ORDER)) {
-          foreach ($matches as $match) {
-            $modules = explode(',', str_replace(' ', '', $match[1]));
-            if (!empty($modules)) {
-              drupal_uninstall_modules($modules);
-            }
-          }
-        }
-      }
-
-      // @TODO make this configurable or use contrib module.
-      $output = shell_exec('/usr/bin/git pull');
-      watchdog('github_webhook', 'Git pull for dreditor.org: <pre><code>!code</code></pre>', array('!code' => $output));
-
-      // Enable modules.
-      if (!empty($enable)) {
-        foreach ($enable as $function => $modules) {
-          call_user_func_array($function, array($modules));
-        }
-      }
-
-      // Flush all caches.
-      drupal_flush_all_caches();
-    }
-
     // dreditor/dreditor
     if ($payload['repository']['name'] === 'dreditor') {
       if (preg_match('/^refs\/tags\/(.*)/', $payload['ref'], $matches)) {
