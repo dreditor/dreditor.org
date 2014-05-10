@@ -524,28 +524,6 @@ function _video_filter_form() {
   return $form;
 }
 
-/**
-* Implementation of hook_ckeditor_plugin().
-*/
-function video_filter_ckeditor_plugin() {
-  return array('video_filter' => array(
-    'name' => 'video_filter',
-    'desc' => t('Plugin for inserting video tags with video_filter.'),
-    'path' => drupal_get_path('module', 'video_filter') . '/editors/ckeditor/',
-    'buttons' => array(
-      'video_filter' => array(
-        'icon' => 'video_filter.png',
-        'label' => t('Video filter'),
-      ),
-    ),
-    'url' => 'http://drupal.org/project/video_filter',
-    'load' => TRUE,
-  ));
-}
-
-/**
-* Implementation of hook_wysiwyg_plugin().
-*/
 function video_filter_wysiwyg_plugin($editor, $version) {
   _video_filter_add_settings('wysiwyg_' . $editor);
 

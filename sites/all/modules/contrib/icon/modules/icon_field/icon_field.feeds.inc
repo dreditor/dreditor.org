@@ -1,6 +1,7 @@
 <?php
 /**
  * @file
+ * icon_field.feeds.inc
  * Feeds mapping implementation for the Icon Field module.
  */
 

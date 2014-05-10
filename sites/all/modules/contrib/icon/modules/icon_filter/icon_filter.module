@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * icon_filter.module
+ * Provides a filter for text fields to replace an icon token with icon markup.
+ */
 
 /**
  * Implements hook_filter_info().

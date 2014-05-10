@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file element.inc
+ * @file
+ * element.inc
  * Provides hooks and functions for element related tasks.
  */
 
@@ -61,7 +61,7 @@ function form_process_icon_selector($element) {
     $element['#description'] = t('There are no icons available to choose from. They either do not exist or are disabled. As a result, this icon selector has also been disable.');
     $element['#description'] .= '<br />' . l(t('Manage icon bundles'), ICON_ADMIN_PATH);
     $element['#disabled'] = TRUE;
-    // Set the default value
+    // Set the default value.
     if (!empty($default_value)) {
       $options = array($default_value => $default_icon);
     }
@@ -82,6 +82,7 @@ function form_process_icon_selector($element) {
 
 /**
  * Implements form_type_ELEMENT_value().
+ *
  * Value callback for the 'icon_selector' element.
  */
 function form_type_icon_selector_value(&$element, $input = FALSE, &$form_state = array()) {

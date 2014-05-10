@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file utilities.inc
+ * @file
+ * utilities.inc
  * Provides useful functions and common tasks.
  */
 
@@ -21,12 +21,29 @@ function icon_archive_extract($file, $directory) {
   if (!$archiver) {
     throw new Exception(t('Cannot extract %file, not a valid archive.', array('%file' => $file)));
   }
-  file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
   $files = $archiver->listContents();
-  $sub_directory = strtok($files[0], '/\\');
-  $extract_location = $directory . '/' . $sub_directory;
+
+  // Determine if archive lives in a wrapped directory matching filename.
+  $info = pathinfo($file);
+  $archiver->sub_directory = str_replace('.' . $info['extension'], '', $info['basename']);
+  foreach ($files as $_file) {
+    $pattern = '/^' . $archiver->sub_directory . '\//';
+    if (!preg_match($pattern, $_file)) {
+      $archiver->sub_directory = FALSE;
+      break;
+    }
+  }
+  $extract_location = $directory;
+  if ($archiver->sub_directory) {
+    $extract_location .= '/' . $archiver->sub_directory;
+  }
   if (file_exists($extract_location)) {
     file_unmanaged_delete_recursive($extract_location);
+  }
+  if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
+    throw new Exception(t('Unable to extract the archive. Please check that your Drupal <a href="!file">file system</a> is correctly configured.', array(
+      '!file' => url('admin/config/media/file-system'),
+    )));
   }
   try {
     $archiver->extract($directory);
@@ -39,35 +56,47 @@ function icon_archive_extract($file, $directory) {
     }
     file_delete($file);
     throw new Exception($e->getMessage());
-    return;
   }
-  $archiver->dir = $sub_directory;
   return $archiver;
 }
 
 /**
- * array_merge_recursive does indeed merge arrays, but it converts values with duplicate
- * keys to arrays rather than overwriting the value in the first array with the duplicate
- * value in the second array, as array_merge does. I.e., with array_merge_recursive,
- * this happens (documented behavior):
+ * Icon API's custom implementation of array_merge_recursive_distinct.
+ *
+ * array_merge_recursive does indeed merge arrays, but it converts values with
+ * duplicate keys to arrays rather than overwriting the value in the first
+ * array with the duplicate value in the second array, as array_merge does.
+ * I.e., with array_merge_recursive, this happens (documented behavior):
+ *
+ * @code
+ *   array_merge_recursive(
+ *     array('key' => 'org value'),
+ *     array('key' => 'new value')
+ *   ) === array('key' => array('org value', 'new value'));
+ * @endcode
  * 
- * array_merge_recursive(array('key' => 'org value'), array('key' => 'new value'));
- *     => array('key' => array('org value', 'new value'));
+ * array_merge_recursive_distinct does not change the datatypes of the values
+ * in the arrays. Matching keys' values in the second array overwrite those in
+ * the first array, as is the case with array_merge, i.e.:
+ *
+ * @code
+ *   array_merge_recursive_distinct(
+ *     array('key' => 'org value'),
+ *     array('key' => 'new value')
+ *   ) === array('key' => 'new value');
+ * @endcode
  * 
- * array_merge_recursive_distinct does not change the datatypes of the values in the arrays.
- * Matching keys' values in the second array overwrite those in the first array, as is the
- * case with array_merge, i.e.:
- * 
- * array_merge_recursive_distinct(array('key' => 'org value'), array('key' => 'new value'));
- *     => array('key' => 'new value');
- * 
- * Parameters are passed by reference, though only for performance reasons. They're not
- * altered by this function.
+ * Parameters are passed by reference, though only for performance reasons.
+ * They're not altered by this function.
  * 
  * @param array $array1
- * @param mixed $array2
+ *   Base array.
+ * @param array $array2
+ *   Additional array.
+ *
  * @author daniel@danielsmedegaardbuus.dk
  * @return array
+ *   The merged array.
  */
 function &icon_array_merge_recursive(array &$array1, &$array2 = NULL) {
   $merged = $array1;
@@ -75,7 +104,7 @@ function &icon_array_merge_recursive(array &$array1, &$array2 = NULL) {
     foreach ($array2 as $key => $val) {
       if (is_array($array2[$key])) {
         $merged[$key] = isset($merged[$key]) && is_array($merged[$key]) ? icon_array_merge_recursive($merged[$key], $array2[$key]) : $array2[$key];
-      }        
+      }
       else {
         $merged[$key] = $val;
       }
@@ -122,16 +151,17 @@ function icon_array_diff_recursive(array $array1, array $array2) {
 /**
  * Determines whether an extension implements a hook.
  *
- * @param $type
+ * @param string $type
  *   The type of extension (theme or module).
- * @param $extension
+ * @param string $extension
  *   The name of the extension.
- * @param $hook
+ * @param string $hook
  *   The name of the hook (e.g. "help" or "menu").
  *
- * @return
+ * @return bool
  *   TRUE if the extension is both installed and enabled, and the hook is
- *   implemented in that extension.
+ *   implemented in that extension. FALSE if the extension does not implement
+ *   the hook.
  */
 function icon_extension_hook($type, $extension, $hook) {
   $hooks = &drupal_static(__FUNCTION__, array());
@@ -156,10 +186,10 @@ function icon_extension_hook($type, $extension, $hook) {
 /**
  * Determines which extensions are implementing a hook.
  *
- * @param $hook
+ * @param string $hook
  *   The name of the hook (e.g. "help" or "menu").
  *
- * @return
+ * @return array
  *   An array with the names of the extensions which are implementing this hook.
  */
 function icon_extension_implements($hook) {
@@ -190,16 +220,23 @@ function icon_extension_implements($hook) {
 /**
  * Invokes a hook in a particular extension.
  *
- * @param $type
+ * @param string $type
  *   The type of extension (theme or module).
- * @param $extension
+ * @param string $extension
  *   The name of the extension.
- * @param $hook
+ * @param string $hook
  *   The name of the hook to invoke.
- * @param ...
+ * @param mixed $data
+ *   Arguments to pass to the hook implementation.
+ * @param mixed $context1
+ *   Arguments to pass to the hook implementation.
+ * @param mixed $context2
  *   Arguments to pass to the hook implementation.
  *
- * @return
+ * The arguments listed for this function are passed by reference, however
+ * more arguments sent if needed.
+ *
+ * @return mixed
  *   The return value of the hook implementation.
  */
 function icon_extension_invoke($type, $extension, $hook, &$data = NULL, &$context1 = NULL, &$context2 = NULL) {
@@ -223,7 +260,7 @@ function icon_extension_invoke($type, $extension, $hook, &$data = NULL, &$contex
 /**
  * Determine which themes are enabled.
  *
- * @return
+ * @return array
  *   An array of theme names.
  */
 function icon_enabled_themes() {
@@ -250,24 +287,24 @@ function icon_enabled_themes() {
  * @param string $source
  *   The filepath or URI where the original source file(s) reside.
  * @param string $destination
- *   The URI where $source should be moved to. This must be a stream wrapper URI.
- *   If this value is omitted, Drupal's default files scheme will be used,
+ *   The URI where $source should be moved to. This must be a stream wrapper
+ *   URI. If this value is omitted, Drupal's default files scheme will be used,
  *   usually "public://".
- * @param string $rename
+ * @param bool|string $rename
  *   When moving a directory, the base name of $source will be used. If desired,
  *   you can effectively rename the top level directory on $destination by
  *   providing a new base name value to the $rename parameter.
- * @param $replace
+ * @param int $replace
  *   Replace behavior when the destination file already exists:
- *   - FILE_EXISTS_REPLACE - Replace the existing file (default behavior).
- *   - FILE_EXISTS_RENAME - Append _{incrementing number} until the filename is
+ *     FILE_EXISTS_REPLACE - Replace the existing file (default behavior).
+ *     FILE_EXISTS_RENAME - Append _{incrementing number} until the filename is
  *       unique.
- *   - FILE_EXISTS_ERROR - Do nothing and return FALSE.
- * @param $depth
+ *     FILE_EXISTS_ERROR - Do nothing and return FALSE.
+ * @param int $depth
  *   Internal use, do not use.
  *
- * @return
- *    The URI of the moved file or directory, or FALSE in the event of an error.
+ * @return string|false
+ *   The URI of the moved file or directory, or FALSE in the event of an error.
  */
 function icon_file_move_recursive($source, $destination = NULL, $rename = FALSE, $replace = FILE_EXISTS_REPLACE, $depth = 0) {
   if (is_dir(drupal_realpath($source))) {
@@ -275,7 +312,9 @@ function icon_file_move_recursive($source, $destination = NULL, $rename = FALSE,
       $destination .= '/' . ($rename ? $rename : drupal_basename($source));
       file_unmanaged_delete_recursive(drupal_realpath($destination));
     }
-    file_prepare_directory($destination, FILE_CREATE_DIRECTORY);
+    if (!file_prepare_directory($destination, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
+      return FALSE;
+    }
     $dir = dir(drupal_realpath($source));
     while (($file = $dir->read()) !== FALSE) {
       if ($file == '.' || $file == '..') {
@@ -303,10 +342,10 @@ function icon_file_move_recursive($source, $destination = NULL, $rename = FALSE,
 /**
  * Find a specific theme icon include file.
  *
- * @param $theme
+ * @param string $theme
  *   The name of the theme to find an include file for.
  *
- * @return
+ * @return string|false
  *   The include path or FALSE if not found.
  */
 function icon_find_theme_include($theme) {
@@ -329,14 +368,17 @@ function icon_find_theme_include($theme) {
 }
 
 /**
- * Wrapper function for drupal_process_attached() so it only is invoked once
- * per bundle, regardless of however many icons are rendered from it.
+ * Wrapper function for drupal_process_attached().
+ *
+ * It only is invoked once per bundle, regardless of however many icons are
+ * rendered from it.
  *
  * @param array $bundle
  *   The icon bundle array.
  *
- * @return boolean
- *    FALSE if there were any missing library dependencies; TRUE if all library dependencies were met.
+ * @return bool
+ *   FALSE if there were any missing library dependencies; TRUE if all library
+ *   dependencies were met.
  */
 function icon_process_attached(array $bundle = array()) {
   if (empty($bundle['name'])) {

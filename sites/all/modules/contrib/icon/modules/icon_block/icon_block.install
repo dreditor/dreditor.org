@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file icon_block.install
+ * @file
+ * icon_block.install
  * Install, update and uninstall functions for the icon_block.module.
  */
 

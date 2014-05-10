@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file cache.inc
+ * @file
+ * cache.inc
  * Provides hooks and functions for cache related tasks.
  */
 
@@ -74,4 +74,3 @@ function icon_themes_enabled($themes) {
   // Clear all caches so the can be rebuilt.
   icon_clear_all_caches();
 }
-

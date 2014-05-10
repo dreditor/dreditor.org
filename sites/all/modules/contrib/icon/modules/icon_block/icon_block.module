@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * icon_block.module
+ * Provides icon integration with blocks.
+ */
 
 /**
  * Implements hook_icon_permission().
@@ -25,6 +30,7 @@ function icon_block_defaults() {
 
 /**
  * Implements hook_preprocess_block().
+ *
  * Add icon to blocks if necessary.
  */
 function icon_block_preprocess_block(&$variables) {
@@ -34,19 +40,36 @@ function icon_block_preprocess_block(&$variables) {
     if ($icon = theme('icon', array('bundle' => $settings['bundle'], 'icon' => $settings['icon']))) {
       $variables['classes_array'][] = 'has-icon';
       switch ($settings['position']) {
-        case 'title_before': $variables['title_prefix'][] = array('#markup' => $icon); break;
-        case 'title_after': $variables['title_suffix'][] = array('#markup' => $icon); break;
-        case 'title_inside_before': $block->subject = $icon . $block->subject; break;
-        case 'title_inside_after': $block->subject .= $icon; break;
-        case 'content_before': $variables['content'] = $icon . $variables['content']; break;
-        case 'content_after': $variables['content'] .= $icon; break;
+        case 'title_before':
+          $variables['title_prefix'][] = array('#markup' => $icon);
+          break;
+
+        case 'title_after':
+          $variables['title_suffix'][] = array('#markup' => $icon);
+          break;
+
+        case 'title_inside_before':
+          $block->subject = $icon . $block->subject;
+          break;
+
+        case 'title_inside_after':
+          $block->subject .= $icon;
+          break;
+
+        case 'content_before':
+          $variables['content'] = $icon . $variables['content'];
+          break;
+
+        case 'content_after':
+          $variables['content'] .= $icon;
+          break;
       }
     }
   }
 }
 
 /**
- * Alter block edit form
+ * Implements hook_form_alter().
  */
 function icon_block_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'block_admin_configure' || $form_id == 'block_add_block_form') {

@@ -1,4 +1,10 @@
 <?php
+/**
+ * @file
+ * icon_menu.module
+ * Implements an API for icon providers and an administrative UI for
+ * integrating icons through out the site.
+ */
 
 /**
  * Implements hook_icon_permission().
@@ -45,8 +51,8 @@ function icon_menu_menu_breadcrumb_alter(&$active_trail, &$item) {
  * Implements hook_preprocess_link().
  */
 function icon_menu_preprocess_link(&$variables) {
-  if (!empty($variables['options']) && !empty($variables['options']['icon']) && !empty($variables['options']['icon']['bundle']) && !empty($variables['options']['icon']['icon'])) {
-    $settings =  $variables['options']['icon'];
+  if (!empty($variables['options']) && !empty($variables['options']['icon']) && !empty($variables['options']['icon']['bundle']) && !empty($variables['options']['icon']['icon']) && (empty($variables['options']['icon']['processed']) || !($variables['options']['icon']['processed']))) {
+    $settings = $variables['options']['icon'];
     if ($icon = theme('icon', array('bundle' => $settings['bundle'], 'icon' => $settings['icon']))) {
       // Force link to render HTML.
       $variables['options']['html'] = TRUE;
@@ -54,9 +60,15 @@ function icon_menu_preprocess_link(&$variables) {
         $variables['text'] = '<' . $settings['title_wrapper_element'] . (!empty($settings['title_wrapper_class']) ? ' class="' . $settings['title_wrapper_class'] . '"' : '') . '>' . $variables['text'] . '</' . $settings['title_wrapper_element'] . '>';
       }
       switch ($variables['options']['icon']['position']) {
-        case 'title_before': $variables['text'] = $icon . $variables['text']; break;
-        case 'title_after': $variables['text'] .= $icon; break;
+        case 'title_before':
+          $variables['text'] = $icon . $variables['text'];
+          break;
+
+        case 'title_after':
+          $variables['text'] .= $icon;
+          break;
       }
+      $variables['options']['icon']['processed'] = TRUE;
     }
   }
 }
@@ -91,12 +103,14 @@ function icon_menu_form_node_form_alter(&$form, $form_state) {
 /**
  * Add the icon configuration to a menu item edit form.
  *
- * @param $form
+ * @param array $form
  *   The menu item edit form passed by reference.
- * @param $item
+ * @param array $item
  *   The optional existing menu item for context.
+ * @param array $complete_form
+ *   The entire form from menu callback.
  */
-function _icon_menu_form_alter(array &$form, array $item = array(), array &$complete_form) {
+function _icon_menu_form_alter(array &$form, array $item = array(), array &$complete_form = array()) {
   $access = user_access('administer icons') || user_access('administer menu icons');
   $form['options']['#tree'] = TRUE;
   $form['options']['#weight'] = 50;
@@ -104,7 +118,7 @@ function _icon_menu_form_alter(array &$form, array $item = array(), array &$comp
   if (isset($form['options']['#value']['icon'])) {
     unset($form['options']['#value']['icon']);
   }
-  // Determine proper parent names for states.  
+  // Determine proper parent names for states.
   $parents = 'options[icon]';
   if (isset($complete_form['menu']['link']) && isset($complete_form['#node']->menu)) {
     $parents = 'menu[options][icon]';

@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file icon.install
+ * @file
+ * icon.install
  * Install, uninstall, and update functions for icon.module.
  */
 
@@ -49,7 +49,7 @@ function icon_set_module_weight($module, $weight = 100) {
 }
 
 /**
- * Add fields to schema if they don't exist
+ * Add fields to schema if they don't exist.
  */
 function icon_install_create_fields($table, $fields) {
   static $schema;

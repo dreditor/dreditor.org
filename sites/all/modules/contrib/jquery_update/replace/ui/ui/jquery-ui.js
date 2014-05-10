@@ -9583,9 +9583,9 @@ $.fn.datepicker = function(options){
 	}
 
 	/* Initialise the date picker. */
-	if (!$.datepicker._initialized) {
+	if (!$.datepicker.initialized) {
 		$(document).mousedown($.datepicker._checkExternalClick);
-		$.datepicker._initialized = true;
+		$.datepicker.initialized = true;
 	}
 
 	/* Append datepicker main container to body if not exist. */
@@ -9611,7 +9611,7 @@ $.fn.datepicker = function(options){
 };
 
 $.datepicker = new Datepicker(); // singleton instance
-$.datepicker._initialized = false;
+$.datepicker.initialized = false;
 $.datepicker.uuid = new Date().getTime();
 $.datepicker.version = "1.10.2";
 

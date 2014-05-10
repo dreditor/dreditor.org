@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file render.inc
+ * @file
+ * render.inc
  * Provides hooks and theme callbacks for default render hooks.
  * @TODO add a "sprite" render hook.
  */
@@ -44,6 +44,7 @@ function icon_preprocess_icon_image(&$variables) {
 
 /**
  * Implements theme_icon_RENDER_HOOK().
+ *
  * Return an image of the requested icon.
  */
 function theme_icon_image($variables) {
@@ -68,7 +69,7 @@ function theme_icon_image($variables) {
 function icon_preprocess_icon_sprite(&$variables) {
   $bundle = &$variables['bundle'];
   $icon = &$variables['icon'];
-  // Add default settings
+  // Add default settings.
   if (!isset($bundle['settings']['tag'])) {
     $bundle['settings']['tag'] = 'span';
   }
@@ -82,6 +83,7 @@ function icon_preprocess_icon_sprite(&$variables) {
 
 /**
  * Implements theme_icon_RENDER_HOOK().
+ *
  * Return a tag with sprite class name of requested icon.
  */
 function theme_icon_sprite($variables) {

@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file bundles.inc
+ * @file
+ * bundles.inc
  * Provides default bundles.
  */
 

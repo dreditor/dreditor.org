@@ -5,9 +5,9 @@ package = Icon API
 
 dependencies[] = filter
 dependencies[] = icon
-; Information added by drupal.org packaging script on 2013-08-15
-version = "7.x-1.0-beta3"
+; Information added by Drupal.org packaging script on 2014-02-17
+version = "7.x-1.0-beta5"
 core = "7.x"
 project = "icon"
-datestamp = "1376583265"
+datestamp = "1392643705"
 

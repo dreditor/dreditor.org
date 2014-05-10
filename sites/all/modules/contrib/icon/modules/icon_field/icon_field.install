@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * icon_field.install
+ */
 
 /**
  * Implements hook_field_schema().
