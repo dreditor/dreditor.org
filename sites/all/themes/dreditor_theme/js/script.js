@@ -216,4 +216,47 @@
     }
   });
 
+  /**
+   * Overrides the prototype "statusMessages" theme implementation.
+   */
+  Drupal.theme.statusMessages = function (messages) {
+    var output = '';
+    var status_heading = {
+      status: Drupal.t('Status message'),
+      error: Drupal.t('Error message'),
+      warning: Drupal.t('Warning message')
+    };
+    // Map Drupal message types to their corresponding Bootstrap classes.
+    // @see http://twitter.github.com/bootstrap/components.html#alerts
+    var status_class = {
+      status: 'success',
+      error: 'danger',
+      warning: 'warning',
+      info: 'info'
+    };
+    for (var type in messages) {
+      if (messages[type].length > 0) {
+        var messageClass = (typeof(status_class[type]) !== 'undefined' ? ' alert-' + status_class[type] : '');
+        output += "<div class=\"alert alert-block" + messageClass + " messages " + type +"\">\n";
+        output += "  <a class=\"close\" data-dismiss=\"alert\" href=\"#\">&times;</a>\n";
+        if (typeof(status_heading[type]) !== 'undefined') {
+          output += '<h4 class="element-invisible">' + status_heading[type] + "</h4>\n";
+        }
+        if (messages[type].length > 1) {
+          output += " <ul>\n";
+          for (var i in messages[type]) {
+            output += '  <li>' + messages[type][i] + "</li>\n";
+            delete messages[type][i];
+          }
+          output += " </ul>\n";
+        }
+        else {
+          output += messages[type][0];
+        }
+        output += "</div>\n";
+      }
+    }
+    return output;
+  };
+
 })(jQuery);

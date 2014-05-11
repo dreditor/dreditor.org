@@ -96,6 +96,9 @@
  */
 function bootstrap_table($variables) {
   $header = $variables['header'];
+  if (!isset($header)) {
+    $header = array();
+  }
   $rows = $variables['rows'];
   $footer = $variables['footer'];
   $attributes = $variables['attributes'];

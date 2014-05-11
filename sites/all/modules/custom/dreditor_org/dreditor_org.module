@@ -21,6 +21,20 @@ function dreditor_org_menu() {
     'access arguments' => array('administer site configuration'),
     'file' => 'dreditor_org.admin.inc',
   );
+  $items['admin/dreditor/logs'] = array(
+    'title' => 'Build Logs',
+    'description' => 'List of recent extension build logs.',
+    'page callback' => 'dreditor_org_build_logs',
+    'access arguments' => array('administer dreditor builds'),
+    'file' => 'dreditor_org.admin.inc',
+  );
+  $items['admin/dreditor/logs/%'] = array(
+    'title' => 'Logs',
+    'page callback' => 'dreditor_org_build_log_view',
+    'page arguments' => array(3),
+    'access arguments' => array('administer dreditor builds'),
+    'file' => 'dreditor_org.admin.inc',
+  );
   // Public pages.
   $items['development'] = array(
     'title' => 'Development',
@@ -59,6 +73,35 @@ function dreditor_org_menu() {
     'type' => MENU_CALLBACK,
   );
   return $items;
+}
+
+/**
+ * Implements hook_js_info().
+ */
+function dreditor_org_js_info() {
+  $base = array(
+    'dependencies' => array(
+      'system',
+    ),
+    // @todo make this file auto-discoverable upstream.
+    'file' => 'dreditor_org.js.inc',
+    'skip init' => TRUE,
+  );
+  return array(
+    'download' => $base,
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dreditor_org_permission() {
+  return array(
+    'administer dreditor builds' => array(
+      'title' => t('Administer Dreditor builds'),
+      'description' => t('Perform administration tasks for Dreditor builds.'),
+    ),
+  );
 }
 
 /**
@@ -142,13 +185,13 @@ function _github_api($path, $options = array()) {
 }
 
 /**
- * Callback to filter out git refs that do not contain Gruntfile.js.
+ * Callback to filter out git refs that do not contain an autobuild.json file.
  *
  * @param string $ref
  *   The git ref value in the array being iterated over.
  */
-function dreditor_org_filter_array_grunt($ref) {
-  return _github_api('/repos/dreditor/dreditor/contents/Gruntfile.js?ref=' . $ref, array('quiet' => TRUE));
+function dreditor_org_filter_array_autobuild($ref) {
+  return _github_api('/repos/dreditor/dreditor/contents/autobuild.json?ref=' . $ref, array('quiet' => TRUE));
 }
 
 /**
@@ -234,7 +277,7 @@ function dreditor_org_branches($sync = FALSE) {
         foreach ($json as $branch) {
           $branches[] = $branch['name'];
         }
-        $branches = array_filter($branches, 'dreditor_org_filter_array_grunt');
+        $branches = array_filter($branches, 'dreditor_org_filter_array_autobuild');
         cache_set('dreditor_org_branches', $branches);
       }
     }
@@ -260,6 +303,7 @@ function dreditor_org_pull_requests($sync = FALSE) {
     else {
       if ($json = _github_api('/repos/dreditor/dreditor/pulls')) {
         $pull_requests = $json;
+        // @todo filter only PRs that are based on HEAD (also for auto-builds).
         cache_set('dreditor_org_pull_requests', $pull_requests);
       }
     }
@@ -288,6 +332,7 @@ function dreditor_org_tags($sync = FALSE) {
         foreach ($json as $tag) {
           $tags[] = $tag['name'];
         }
+        $tags = array_filter($tags, 'dreditor_org_filter_array_autobuild');
         cache_set('dreditor_org_tags', $tags);
       }
     }

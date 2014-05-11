@@ -6,6 +6,8 @@
 
 /**
  * Implements hook_js().
+ *
+ * @todo upgrade this to 7.x-2.x hook_js_info() implementation.
  */
 function dreditor_review_js() {
   return array(

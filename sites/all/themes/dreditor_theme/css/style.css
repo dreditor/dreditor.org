@@ -2,6 +2,19 @@
   padding: 14px 16px;
   line-height: 1em;
 }
+td .btn-group {
+  margin-right: 5px;
+}
+td .btn-group:last-child {
+  margin-right: 0;
+}
+.btn-group .btn~.dropdown-toggle {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.btn-group .dropdown-menu {
+  text-align: left;
+}
 .btn .icon {
   font-size: 150%;
   margin: -.65em .25em -.5em -.25em;
@@ -11,6 +24,10 @@
   float: left;
   position: relative;
   top: .15em;
+}
+.btn.btn-xs .icon.glyphicon-spin {
+  top: .35em;
+  margin-left: -.2em;
 }
 .glyphicon-refresh {
   -webkit-transform-origin: 50% 50%;
