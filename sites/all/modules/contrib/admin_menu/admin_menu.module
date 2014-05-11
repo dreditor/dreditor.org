@@ -64,7 +64,7 @@ function admin_menu_menu() {
   // AJAX callback.
   // @see http://drupal.org/project/js
   $items['js/admin_menu/cache'] = array(
-    'page callback' => 'admin_menu_js_cache',
+    'page callback' => 'admin_menu_js_callback_cache',
     'delivery callback' => 'admin_menu_deliver',
     'access arguments' => array('access administration menu'),
     'type' => MENU_CALLBACK,
@@ -192,6 +192,11 @@ function admin_menu_page_build(&$page) {
   // user, only output the hash for the client-side HTTP cache callback URL.
   $cid = 'admin_menu:' . $user->uid . ':' . session_id() . ':' . $language->language;
   if (!$complete && !empty($_COOKIE['has_js']) && ($hash = admin_menu_cache_get($cid))) {
+    // If the JS module is installed, invoke the function to generate a token
+    // so it is added via settings.
+    if (module_exists('js')) {
+      js_get_token('admin_menu', 'cache');
+    }
     $settings['hash'] = $hash;
     // The base path to use for cache requests depends on whether clean URLs
     // are enabled, whether Drupal runs in a sub-directory, and on the language
@@ -269,14 +274,15 @@ function admin_menu_suppress($set = TRUE) {
 }
 
 /**
- * Implements hook_js().
+ * Implements hook_js_info().
  */
-function admin_menu_js() {
+function admin_menu_js_info() {
   return array(
     'cache' => array(
-      'callback' => 'admin_menu_js_cache',
-      'includes' => array('path'),
-      'access arguments' => array('access administration menu'),
+      'delivery callback' => 'admin_menu_deliver',
+      'dependencies' => array('devel', 'filter', 'user'),
+      'includes' => array('common', 'theme', 'unicode'),
+      'methods' => array('GET'),
     ),
   );
 }
@@ -329,7 +335,7 @@ function admin_menu_cache_set($cid, $data) {
  *
  * @see admin_menu_deliver()
  */
-function admin_menu_js_cache() {
+function admin_menu_js_callback_cache() {
   global $conf;
 
   // Suppress Devel module.
@@ -373,7 +379,7 @@ function admin_menu_js_cache() {
 /**
  * Delivery callback for client-side HTTP caching.
  *
- * @see admin_menu_js_cache()
+ * @see admin_menu_js_callback_cache()
  */
 function admin_menu_deliver($page_callback_result) {
   drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
@@ -382,9 +388,10 @@ function admin_menu_deliver($page_callback_result) {
   global $language;
   drupal_add_http_header('Content-Language', $language->language);
 
-  // The page callback is always admin_menu_js_cache(), which always returns a
-  // string, and is only accessed when the user actually has access to it.
-  // Therefore, we do not care for the other possible page callback results.
+  // The page callback is always admin_menu_js_callback_cache(), which always
+  // returns a string, and is only accessed when the user actually has access
+  // to it. Therefore, we do not care for the other possible page callback
+  // results.
   print $page_callback_result;
 
   // Perform end-of-request tasks. The page cache is created here.

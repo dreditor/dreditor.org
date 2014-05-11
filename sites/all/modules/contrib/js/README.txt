@@ -195,9 +195,9 @@ it when you must.
 
 - Output -
 
-js.php outputs the return value of the callback function using drupal_to_js().
-To use a custom output format, output the data on your own and exit()
-afterwards, or simply return nothing.
+js.php outputs the return value of the callback function using drupal_json_output().
+To use a custom output format, specify the "delivery callback" option in your hook_js()
+implementation. See the API documentation for more details.
 
 - Fallback - 
 

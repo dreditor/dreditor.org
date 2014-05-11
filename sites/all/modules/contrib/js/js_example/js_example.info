@@ -1,9 +1,9 @@
-name = JavaScript callback handler tests
-description = Tests for the JS module.
+name = JavaScript callback handler (example)
+description = Provides examples on how to use the JS module API.
 package = Performance
-core = "7.x"
+core = 7.x
+dependencies[] = js
 
-files[] = js_test.test
 ; Information added by Drupal.org packaging script on 2014-04-09
 version = "7.x-2.x-dev"
 core = "7.x"
