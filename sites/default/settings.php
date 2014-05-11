@@ -553,12 +553,3 @@ $conf['404_fast_html'] = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN"
 # $conf['allow_authorize_operations'] = FALSE;
 
 @include 'local.settings.php';
-
-/**
- * Redis Cache
- */
-$conf['redis_client_interface']     = 'PhpRedis';
-$conf['cache_backends'][]           = 'sites/all/modules/contrib/redis/redis.autoload.inc';
-$conf['cache_default_class']        = 'Redis_Cache';
-$conf['cache_class_cache_update']   = 'DrupalDatabaseCache';
-$conf['cache_class_cache_form']     = 'DrupalDatabaseCache';
