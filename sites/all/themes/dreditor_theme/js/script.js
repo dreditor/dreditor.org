@@ -39,10 +39,6 @@
           }
         }
       })
-      .fail(function () {
-        // Manually set a fall back production tag.
-        prodTag = '1.2.4';
-      })
       .complete(function () {
           setTimeout(function () {
             $('body').once('dreditor-install', function () {
@@ -79,6 +75,11 @@
 
                   var disabled = false;
                   var error = false;
+
+                  // Manually set a fall back production tag.
+                  if (!prodTag) {
+                    prodTag = '1.2.5';
+                  }
 
                   var installText = 'Install Dreditor ' + prodTag + (browser ? ' for ' + browser : '');
                   var loadingText = 'Downloading Dreditor ' + prodTag + ' ...';
