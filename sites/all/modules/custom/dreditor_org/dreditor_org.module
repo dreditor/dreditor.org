@@ -21,26 +21,13 @@ function dreditor_org_menu() {
     'access arguments' => array('administer site configuration'),
     'file' => 'dreditor_org.admin.inc',
   );
-  $items['admin/dreditor/logs'] = array(
-    'title' => 'Build Logs',
-    'description' => 'List of recent extension build logs.',
-    'page callback' => 'dreditor_org_build_logs',
-    'access arguments' => array('administer dreditor builds'),
-    'file' => 'dreditor_org.admin.inc',
-  );
-  $items['admin/dreditor/logs/%'] = array(
-    'title' => 'Logs',
-    'page callback' => 'dreditor_org_build_log_view',
-    'page arguments' => array(3),
-    'access arguments' => array('administer dreditor builds'),
-    'file' => 'dreditor_org.admin.inc',
-  );
+
   // Public pages.
   $items['development'] = array(
     'title' => 'Development',
     'page callback' => 'drupal_goto',
     'page arguments' => array('development/contributing'),
-    'access callback' => TRUE,
+    'access arguments' => array('access content'),
     'menu_name' => 'main-menu',
     'type' => MENU_NORMAL_ITEM,
     'expanded' => TRUE,
@@ -49,26 +36,46 @@ function dreditor_org_menu() {
     'title' => 'Contributing',
     'page callback' => 'dreditor_org_contributing',
     'page arguments' => array(),
-    'access callback' => TRUE,
+    'access arguments' => array('access content'),
     'file' => 'dreditor_org.pages.inc',
     'menu_name' => 'main-menu',
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['development/builds'] = array(
+  $items['development/build'] = array(
     'title' => 'Automated Builds',
     'page callback' => 'dreditor_org_builds',
     'page arguments' => array(),
-    'access callback' => TRUE,
+    'access arguments' => array('access content'),
     'file' => 'dreditor_org.pages.inc',
     'menu_name' => 'main-menu',
     'type' => MENU_NORMAL_ITEM,
     'weight' => 10,
   );
+  $items['development/build/overview'] = array(
+    'title' => 'Repository',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['development/build/logs'] = array(
+    'title' => 'Logs',
+    'description' => 'List of recent extension build logs.',
+    'page callback' => 'dreditor_org_build_logs',
+    'access arguments' => array('access content'),
+    'file' => 'dreditor_org.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['development/build/logs/%'] = array(
+    'title' => 'Logs',
+    'page callback' => 'dreditor_org_build_log_view',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+    'file' => 'dreditor_org.pages.inc',
+  );
   $items['ajax/dreditor/%'] = array(
     'title' => 'Automated Builds',
     'page callback' => 'dreditor_org_ajax',
     'page arguments' => array(2),
-    'access callback' => TRUE,
+    'access arguments' => array('access content'),
     'file' => 'dreditor_org.pages.inc',
     'type' => MENU_CALLBACK,
   );
@@ -413,4 +420,43 @@ function dreditor_org_process_page(&$variables) {
   if (!empty($variables['page']['content']['system_main']['#title_hidden'])) {
     $variables['title'] = '';
   }
+}
+
+/**
+ * Helper function to return the build path and prepare it.
+ *
+ * @param string $build
+ *   The build type. Should be one of:
+ *   - pr
+ *   - branch
+ *   - tag
+ * @param string $ref
+ *   The value of the reference associated with the build type.
+ *
+ * @return string
+ *   Returns the build path.
+ */
+function _dreditor_org_build_path($build, $ref) {
+  return "public://builds/$build/$ref";
+}
+
+/**
+ * Helper function for checking if a process is currently running.
+ *
+ * @param int $pid
+ *   The process ID.
+ *
+ * @return bool
+ *   TRUE if process is currently running, FALSE otherwise.
+ */
+function _dreditor_org_process_is_running($pid) {
+  try {
+    $result = shell_exec(sprintf("ps %d", $pid));
+    if (count(preg_split("/\n/", $result)) > 2) {
+      return TRUE;
+    }
+  }
+  catch(Exception $e){
+  }
+  return FALSE;
 }

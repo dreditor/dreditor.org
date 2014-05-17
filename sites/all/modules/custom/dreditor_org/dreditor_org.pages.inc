@@ -165,6 +165,7 @@ function _dreditor_org_build_buttons($attributes = array()) {
  * Page callback for "development/builds".
  */
 function dreditor_org_builds() {
+//  dpm(var_export(_dreditor_org_process_is_running(418), TRUE));
   $build = array(
     '#theme_wrappers' => array('container'),
     '#attributes' => array(
@@ -181,7 +182,7 @@ function dreditor_org_builds() {
   );
 
   $repo = dreditor_org_repo();
-  $master_branch = !empty($repo['master_branch']) ? $repo['master_branch'] : FALSE;
+  $default_branch = !empty($repo['default_branch']) ? $repo['default_branch'] : FALSE;
 
   // Pull requests.
   // @todo re-enable these once proper events are in place.
@@ -226,13 +227,14 @@ function dreditor_org_builds() {
     ),
   );
   foreach (dreditor_org_branches() as $branch) {
-    if ($master_branch && $branch === $master_branch) {
-      $branch .= ' (master)';
-      $master_branch = FALSE;
+    $branch_title = $branch;
+    if ($default_branch && $branch === $default_branch) {
+      $branch_title .= ' (HEAD)';
+      $default_branch = FALSE;
     }
     $branch_rows[] = array(
       array(
-        'data' => $branch,
+        'data' => $branch_title,
       ),
       array(
         'data' => _dreditor_org_build_buttons(array(
@@ -284,5 +286,152 @@ function dreditor_org_builds() {
     ),
   );
 
+  return $build;
+}
+
+/**
+ * Menu callback for 'development/build/logs'.
+ */
+function dreditor_org_build_logs() {
+  $build = array();
+  $rows = array();
+  foreach (file_scan_directory('public://logs', '/log$/') as $file) {
+    $row = array();
+    $row[] = array(
+      'data' => array(
+        'view' => array(
+          '#type' => 'link',
+          '#title' => $file->filename,
+          '#href' => 'development/build/logs/' . $file->filename,
+        ),
+        'download' => array(
+          '#type' => 'link',
+          '#title' => t('download'),
+          '#href' => file_create_url($file->uri),
+          '#prefix' => ' (',
+          '#suffix' => ')',
+        ),
+      ),
+    );
+    $row[] = format_size(filesize($file->uri));
+    $row[] = format_date(filemtime($file->uri));
+    $rows[] = $row;
+  }
+  $build['logs'] = array(
+    '#theme' => 'table',
+    '#header' => array(
+      t('Filename'),
+      t('Size'),
+      t('Last Modified'),
+    ),
+    '#rows' => $rows,
+  );
+  return $build;
+}
+
+/**
+ * Menu callback for 'development/build/logs/%'.
+ */
+function dreditor_org_build_log_view($file) {
+  $module_path = drupal_get_path('module', 'dreditor_org');
+  $build = array(
+    '#theme_wrappers' => array('container'),
+    '#attributes' => array(
+      'id' => 'build-log',
+      'class' => array('build-log'),
+    ),
+    '#attached' => array(
+      'library' => array(
+        array('system', 'ui'),
+      ),
+      'js' => array(
+        $module_path . '/js/dreditor_org.js',
+      ),
+    ),
+  );
+
+  $raw_log = "public://logs/$file";
+  $html_log = "public://logs/$file.html";
+  if (file_exists($raw_log) || file_exists($html_log)) {
+    drupal_set_title($file);
+    if (!file_exists($html_log)) {
+      if ($ansi2html = trim(shell_exec('which ansi2html'))) {
+        file_put_contents($html_log, '');
+        $stream_wrapper = file_stream_wrapper_get_instance_by_uri($raw_log);
+        $raw_log_realpath = $stream_wrapper->realpath();
+        $stream_wrapper = file_stream_wrapper_get_instance_by_uri($html_log);
+        $html_log_realpath = $stream_wrapper->realpath();
+        if ($raw_log_realpath && $html_log_realpath) {
+          exec(sprintf('%s < %s > %s', $ansi2html, $raw_log_realpath, $html_log_realpath));
+        }
+      }
+    }
+    $build['toolbar'] = array(
+      '#theme_wrappers' => array('container'),
+      '#attributes' => array(
+        'class' => array('btn-toolbar', 'pull-right'),
+      ),
+    );
+    $build['toolbar']['view_modes'] = array(
+      '#theme_wrappers' => array('container'),
+      '#attributes' => array(
+        'class' => array(
+          'btn-group',
+          'btn-group-sm',
+          'pull-right',
+          'view-modes',
+        ),
+        'data-toggle' => 'buttons',
+      ),
+      'pretty' => array(
+        '#theme' => 'radio',
+        '#prefix' => '<label class="btn btn-default">',
+        '#suffix' => t('Pretty') . '</label>',
+        '#attributes' => array(
+          'class' => array('pretty'),
+          'id' => 'pretty',
+          'name' => 'view_mode',
+        ),
+      ),
+      'raw' => array(
+        '#theme' => 'radio',
+        '#prefix' => '<label class="btn btn-default">',
+        '#suffix' => t('Raw') . '</label>',
+        '#attributes' => array(
+          'class' => array('raw'),
+          'id' => 'raw',
+          'name' => 'view_mode',
+        ),
+      ),
+    );
+
+    $build['time'] = array(
+      '#markup' => '<h4>' . format_date(filemtime($raw_log)) . '</h4>',
+    );
+    $build['raw'] = array(
+      '#theme' => 'html_tag',
+      '#tag' => 'pre',
+      '#value' => file_get_contents($raw_log),
+      '#attributes' => array(
+        'class' => array('raw'),
+      ),
+    );
+    // Show the parsed HTML version.
+    if (file_exists($html_log) && filesize($html_log) > 0) {
+      $build['#attached']['js'][] = $module_path . '/js/dreditor_org.prettylog.js';
+      $build['#attached']['js'][] = array(
+        'data' => array(
+          'prettyLogStyles' => $module_path . '/css/dreditor_org.prettylog.css',
+        ),
+        'type' => 'setting',
+      );
+      $build['html'] = array(
+        '#markup' => '<iframe class="pretty" src="' . file_create_url($html_log) . '" height="500" width="100%" /></iframe>',
+      );
+    }
+  }
+  else {
+    drupal_not_found();
+  }
   return $build;
 }

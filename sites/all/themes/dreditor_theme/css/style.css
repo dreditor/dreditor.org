@@ -79,3 +79,13 @@ input:focus,button:focus,.btn:focus,.form-control:focus,textarea:focus,a:focus {
   opacity: .05;
   z-index: 0;
 }
+.build-log pre.raw {
+  /* List from http://hivelogic.com/articles/top-10-programming-fonts */
+  font-family: "Anonymous Pro", "Inconsolata", "Consolas", "Deja Vu Sans Mono", "Droid Sans Mono", "Proggy Clean", "Monofur", "Profont", "Monaco", "Andale Mono", "Liberation Mono", "Courier", monospace;
+  font-size: 12px;
+  line-height: 1.25em;
+  margin: 0;
+  max-height: 500px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
