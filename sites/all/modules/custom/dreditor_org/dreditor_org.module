@@ -87,6 +87,9 @@ function dreditor_org_menu() {
  */
 function dreditor_org_js_info() {
   $base = array(
+    'includes' => array(
+      'path.inc',
+    ),
     'dependencies' => array(
       'system',
     ),
