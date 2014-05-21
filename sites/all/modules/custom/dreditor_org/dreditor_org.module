@@ -363,7 +363,7 @@ function dreditor_org_tags($sync = FALSE) {
  */
 function dreditor_org_github_webhook_event(array $payload, array &$response, array $args, $event) {
   // dreditor/dreditor webhook events.
-  if ($payload['repository']['full_name'] === 'dreditor/dreditor') {
+  if (isset($payload['repository']['full_name']) && $payload['repository']['full_name'] === 'dreditor/dreditor') {
     $build_options = array();
     $cleanup_options = array();
     switch ($event) {
