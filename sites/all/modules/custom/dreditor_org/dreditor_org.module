@@ -1,4 +1,5 @@
 <?php
+include_once dirname(__FILE__) . '/dreditor_org.build.inc';
 
 /**
  * Implements hook_menu().
@@ -51,23 +52,9 @@ function dreditor_org_menu() {
     'type' => MENU_NORMAL_ITEM,
     'weight' => 10,
   );
-  $items['development/build/overview'] = array(
-    'title' => 'Repository',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  );
-  $items['development/build/logs'] = array(
+  $items['development/build/log'] = array(
     'title' => 'Logs',
-    'description' => 'List of recent extension build logs.',
-    'page callback' => 'dreditor_org_build_logs',
-    'access arguments' => array('access content'),
-    'file' => 'dreditor_org.pages.inc',
-    'type' => MENU_LOCAL_TASK,
-  );
-  $items['development/build/logs/%'] = array(
-    'title' => 'Logs',
-    'page callback' => 'dreditor_org_build_log_view',
-    'page arguments' => array(3),
+    'page callback' => 'dreditor_org_build_log',
     'access arguments' => array('access content'),
     'file' => 'dreditor_org.pages.inc',
   );
@@ -87,18 +74,22 @@ function dreditor_org_menu() {
  */
 function dreditor_org_js_info() {
   $base = array(
-    'includes' => array(
-      'path.inc',
-    ),
-    'dependencies' => array(
-      'system',
-    ),
     // @todo make this file auto-discoverable upstream.
     'file' => 'dreditor_org.js.inc',
     'skip init' => TRUE,
   );
   return array(
-    'download' => $base,
+    'rebuild' => $base + array(
+      // Needs full bootstrap because it must returned themed elements.
+      'bootstrap' => DRUPAL_BOOTSTRAP_FULL,
+    ),
+    'build_check' => $base + array(
+      // Needs full bootstrap because it must returned themed elements.
+      'bootstrap' => DRUPAL_BOOTSTRAP_FULL,
+      // This callback does not need a token. It only acts to retrieve page
+      // content; as one would normally get on a simple page refresh.
+      'token' => FALSE,
+    ),
   );
 }
 
@@ -195,16 +186,6 @@ function _github_api($path, $options = array()) {
 }
 
 /**
- * Callback to filter out git refs that do not contain an autobuild.json file.
- *
- * @param string $ref
- *   The git ref value in the array being iterated over.
- */
-function dreditor_org_filter_array_autobuild($ref) {
-  return _github_api('/repos/dreditor/dreditor/contents/autobuild.json?ref=' . $ref, array('quiet' => TRUE));
-}
-
-/**
  * Repository information for dreditor/dreditor on GitHub.
  *
  * @param bool $sync
@@ -285,9 +266,9 @@ function dreditor_org_branches($sync = FALSE) {
     else {
       if ($json = _github_api('/repos/dreditor/dreditor/branches')) {
         foreach ($json as $branch) {
-          $branches[] = $branch['name'];
+          $branches[$branch['name']] = $branch;
+          $branches[$branch['name']]['autobuild'] = (bool) _github_api('/repos/dreditor/dreditor/contents/autobuild.json?ref=' . $branch['name'], array('quiet' => TRUE));
         }
-        $branches = array_filter($branches, 'dreditor_org_filter_array_autobuild');
         cache_set('dreditor_org_branches', $branches);
       }
     }
@@ -312,8 +293,18 @@ function dreditor_org_pull_requests($sync = FALSE) {
     }
     else {
       if ($json = _github_api('/repos/dreditor/dreditor/pulls')) {
-        $pull_requests = $json;
-        // @todo filter only PRs that are based on HEAD (also for auto-builds).
+        foreach ($json as $pull_request) {
+          $pr = _github_api('/repos/dreditor/dreditor/pulls/' . $pull_request['number']);
+          $trees = _github_api('/repos/dreditor/dreditor/git/trees/' . $pr['merge_commit_sha']);
+          $pr['autobuild'] = FALSE;
+          foreach ($trees['tree'] as $tree) {
+            if ($tree['path'] === 'autobuild.json') {
+              $pr['autobuild'] = TRUE;
+              break;
+            }
+          }
+          $pull_requests[$pull_request['number']] = $pr;
+        }
         cache_set('dreditor_org_pull_requests', $pull_requests);
       }
     }
@@ -340,9 +331,9 @@ function dreditor_org_tags($sync = FALSE) {
     else {
       if ($json = _github_api('/repos/dreditor/dreditor/tags')) {
         foreach ($json as $tag) {
-          $tags[] = $tag['name'];
+          $tags[$tag['name']] = $tag;
+          $tags[$tag['name']]['autobuild'] = (bool) _github_api('/repos/dreditor/dreditor/contents/autobuild.json?ref=' . $tag['name'], array('quiet' => TRUE));
         }
-        $tags = array_filter($tags, 'dreditor_org_filter_array_autobuild');
         cache_set('dreditor_org_tags', $tags);
       }
     }
@@ -371,49 +362,91 @@ function dreditor_org_tags($sync = FALSE) {
  * @see http://developer.github.com/v3/repos/hooks/#events
  */
 function dreditor_org_github_webhook_event(array $payload, array &$response, array $args, $event) {
-  object_log($event . ': payload', $payload);
-  if ($event === 'push' && !empty($payload['repository']['name'])) {
-
-    // dreditor/dreditor
-    if ($payload['repository']['name'] === 'dreditor') {
-      if (preg_match('/^refs\/tags\/(.*)/', $payload['ref'], $matches)) {
-        dreditor_org_tags(TRUE);
-      }
-      // Branch create/delete trigger.
-      if (
-        !empty($payload['ref']) &&
-        (
-          ($payload['created'] && $payload['before'] === '0000000000000000000000000000000000000000') ||
-          ($payload['deleted'] && $payload['after'] === '0000000000000000000000000000000000000000')
-        ) &&
-        preg_match('/^refs\/heads/', $payload['ref'])
-      ) {
-        dreditor_org_branches(TRUE);
-      }
-
-      // Update cached content of files in repository, if needed.
-      $update_cache = FALSE;
-      $contents = dreditor_org_repo_content();
-      $paths = array_keys($contents);
-      foreach ($payload['commits'] as $commit) {
-        foreach ($paths as $path) {
-          if (in_array($path, $commit['added']) || in_array($path, $commit['removed']) || in_array($path, $commit['modified'])) {
-            unset($contents[$path]);
-            $update_cache = TRUE;
+  // dreditor/dreditor webhook events.
+  if ($payload['repository']['full_name'] === 'dreditor/dreditor') {
+    $build_options = array();
+    $cleanup_options = array();
+    switch ($event) {
+      case 'push':
+        // Update cached content of files in repository, if needed.
+        $update_cache = FALSE;
+        $contents = dreditor_org_repo_content();
+        $paths = array_keys($contents);
+        foreach ($payload['commits'] as $commit) {
+          foreach ($paths as $path) {
+            if (in_array($path, $commit['added']) || in_array($path, $commit['removed']) || in_array($path, $commit['modified'])) {
+              unset($contents[$path]);
+              $update_cache = TRUE;
+            }
           }
         }
-      }
-      if ($update_cache) {
-        cache_set('dreditor_org_repo_content', $contents);
-      }
+        if ($update_cache) {
+          cache_set('dreditor_org_repo_content', $contents);
+        }
+        break;
+
+      case 'pull_request':
+        $pull_requests = dreditor_org_pull_requests(TRUE);
+        if (isset($pull_requests[$payload['number']]) && ($pr = $pull_requests[$payload['number']]) && $pr['mergeable']) {
+          $build_options['pr'] = $pr['number'];
+        }
+        if ($payload['action'] === 'closed') {
+          $cleanup_options['pr'] = $payload['number'];
+        }
+        break;
+
+      case 'create':
+        switch ($payload['ref_type']) {
+          case 'branch':
+            $branches = dreditor_org_branches(TRUE);
+            if (isset($branches[$payload['ref']]) && ($branch = $branches[$payload['ref']]) && $branch['autobuild']) {
+              $build_options['branch'] = $branch['name'];
+            }
+            break;
+
+          case 'tag':
+            $tags = dreditor_org_tags(TRUE);
+            if (isset($tags[$payload['ref']]) && ($tag = $tags[$payload['ref']]) && $tag['autobuild']) {
+              $build_options['branch'] = $tag['name'];
+              $build_options['checkout'] = $tag['commit']['sha'];
+            }
+            break;
+        }
+        break;
+
+      case 'delete':
+        switch ($payload['ref_type']) {
+          case 'branch':
+            dreditor_org_branches(TRUE);
+            $cleanup_options['branch'] = $payload['ref'];
+            break;
+
+          case 'tag':
+            $tags = dreditor_org_tags();
+            dreditor_org_tags(TRUE);
+            if (isset($tags[$payload['ref']])) {
+              $cleanup_options['branch'] = $payload['ref'];
+              $cleanup_options['checkout'] = $tags[$payload['ref']]['commit']['sha'];
+            }
+            break;
+        }
+        break;
     }
 
-  }
+    // Create a new build based on provided options.
+    if (!empty($build_options)) {
+      $hash = _dreditor_org_build_hash($build_options);
+      $bid = _dreditor_org_set_bid($hash, TRUE);
+      _dreditor_org_drush_dreditor_build($hash, $bid, $build_options);
+    }
 
-  if ($event === 'pull_request' && $payload['repository']['name'] === 'dreditor') {
-    dreditor_org_pull_requests(TRUE);
+    // Attempt to cleanup removed builds.
+    if (!empty($cleanup_options)) {
+      $hash = _dreditor_org_build_hash($build_options);
+      $paths = _dreditor_org_build_paths($hash);
+      @file_unmanaged_delete_recursive($paths['dir']);
+    }
   }
-
 }
 
 /**
@@ -426,40 +459,19 @@ function dreditor_org_process_page(&$variables) {
 }
 
 /**
- * Helper function to return the build path and prepare it.
- *
- * @param string $build
- *   The build type. Should be one of:
- *   - pr
- *   - branch
- *   - tag
- * @param string $ref
- *   The value of the reference associated with the build type.
- *
- * @return string
- *   Returns the build path.
+ * Helper function for returning the real system path of a file URI.
  */
-function _dreditor_org_build_path($build, $ref) {
-  return "public://builds/$build/$ref";
-}
-
-/**
- * Helper function for checking if a process is currently running.
- *
- * @param int $pid
- *   The process ID.
- *
- * @return bool
- *   TRUE if process is currently running, FALSE otherwise.
- */
-function _dreditor_org_process_is_running($pid) {
-  try {
-    $result = shell_exec(sprintf("ps %d", $pid));
-    if (count(preg_split("/\n/", $result)) > 2) {
-      return TRUE;
-    }
+function _dreditor_org_uri_realpath($uri) {
+  $stream_wrapper = file_stream_wrapper_get_instance_by_uri($uri);
+  list($scheme, $target) = explode('://', $uri, 2);
+  $directory = $stream_wrapper->getDirectoryPath();
+  $realpath = $stream_wrapper->realpath();
+  // The file does not yet exist.
+  if (!$realpath && $directory && $directory[0] !== '/') {
+    $realpath = DRUPAL_ROOT . '/' . $directory . '/' . trim($target, '\/');
   }
-  catch(Exception $e){
+  elseif (!$realpath && $directory && $directory[0] === '/') {
+    $realpath = $directory . '/' . trim($target, '\/');
   }
-  return FALSE;
+  return $realpath;
 }

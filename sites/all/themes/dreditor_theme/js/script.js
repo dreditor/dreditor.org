@@ -1,4 +1,153 @@
-(function($){
+(function(window, $, Drupal, JS){
+
+
+  var DreditorTheme = window.DreditorTheme || {
+
+    callbacks: {},
+
+    /**
+     * DOM object for modal.
+     */
+    $modal: $(),
+
+    /**
+     * DreditorTheme modal handler.
+     */
+    Modal: function (e) {
+      var $this   = $(this);
+      var href    = $this.attr('href');
+      href = href ? href.replace(/.*(?=#[^\s]+$)/, '') : false;
+      var $target = $($this.attr('data-target') || /^#/.test(href) && href || DreditorTheme.$modal);
+      var defaults = {
+        remote: !/#/.test(href) && href,
+        title: Drupal.t('Loading...'),
+        buttons: [
+          {
+            type: 'default',
+            title: Drupal.t('Close')
+          }
+        ]
+      };
+      var option  = !$target.is(DreditorTheme.$modal) && $target.data('bs.modal') ? 'toggle' : $.extend(defaults, $target.data(), $this.data());
+
+      // Prevent element default behavior if link or input.
+      if ($this.is('a,:input')) {
+        e.preventDefault();
+      }
+
+      if ($target.is(DreditorTheme.$modal)) {
+        var $title = $target.find('.modal-title');
+        var $body = $target.find('.modal-body');
+        var $footer = $target.find('.modal-footer');
+        var throbber = '<div class="ajax-progress ajax-progress-throbber"><span class="icon glyphicon glyphicon-refresh glyphicon-spin" aria-hidden="true"></span></div>';
+        var $throbber = $();
+        // Test to ensure content being requested is on same server, otherwise
+        // let Bootstrap's modal handle it.
+        if (!JS.urlIsExternal(option.remote)) {
+          option.remote = false;
+          var modalLoading = function () {
+            $title.html(option.title);
+            $body.html('');
+            $footer.html('');
+            $throbber = $(throbber).appendTo($footer);
+          };
+          modalLoading();
+          var jsDefaluts = {
+            // Don't send this data attribute.
+            jsIgnoreData: ['toggle'],
+            // @todo abstract these into JS.behaviors.
+            beforeSend: modalLoading,
+            complete: function (jqXHR) {
+              if (this.dataType === 'json') {
+                // Older versions of jQuery do not have jqXHR.responseJSON, we must parse
+                // the responseText manually.
+                var json = this.dataType === 'json' && jqXHR.responseText && $.parseJSON(jqXHR.responseText) || {};
+
+                // Modal is redirecting, don't process anything.
+                if (json.response && json.response.code && json.response.url && $.inArray(json.response.code, [301, 302, 303, 307]) !== -1) {
+                  return;
+                }
+                $throbber.remove();
+                // Get any messages processed already.
+                var content = JS.messages.html();
+                JS.messages.html('');
+                if (json.title) {
+                  $title.html(json.title);
+                }
+                if (json.content) {
+                  content += json.content;
+                }
+                $body.html(content);
+
+                // Bind any links inside the content to load using the same modal.
+                $body.find('a').bind('click', function (e) {
+                  e.preventDefault();
+                  $(this).jsGet(jsDefaluts);
+                });
+
+                // Handle form submissions via JS module.
+                var $form = $body.find('form').jsForm(jsDefaluts);
+
+                // Focus first input available.
+                $form.find(':input').first().focus();
+
+                // Hide form actions and clone them into the footer of the modal.
+                // They cannot be moved because their actions would no longer be
+                // tied to the form element. Instead, bind the cloned elements so
+                // they trigger the real elements.
+                var $formActions = $form.find('.form-actions').hide();
+                if ($formActions.length === 1) {
+                  $footer.html('');
+                  $formActions.find('*').each(function () {
+                    var $element = $(this);
+                    var callback = $element.data('callback');
+                    $element.clone().appendTo($footer).not('[data-dismiss=modal]').on('click mousedown mouseup mouseenter keypress keydown keyup', function (e) {
+                      if (callback && (e.type === 'click' || e.type === 'keypress')) {
+                        if (typeof DreditorTheme.callbacks[callback] === 'function') {
+                          DreditorTheme.callbacks[callback].apply(this, [e, $form]);
+                        }
+                      }
+                      else {
+                        $element.trigger(e.type);
+                      }
+                    });
+                  });
+                }
+                Drupal.attachBehaviors($body);
+              }
+            }
+          };
+          $this.jsGet(jsDefaluts);
+        }
+        var footer = '';
+        for (var i = 0, l = option.buttons.length; i < l; i++) {
+          $footer.append('<button type="button" class="btn ' + (option.buttons[i].type ? 'btn-' + option.buttons[i].type : 'btn-default')  + '" data-dismiss="modal" aria-hidden="true">' + (option.buttons[i].title ? option.buttons[i].title : Drupal.t('Close')) + '</button>');
+        }
+      }
+
+      $target
+        .modal(option, this)
+        .one('hide', function () {
+          $this.is(':visible') && $this.trigger('focus')
+        });
+    }
+  };
+
+  Drupal.behaviors.dreditorTheme = {
+    attach: function (context, settings) {
+      $(document.body).once('dreditorTheme', function () {
+        DreditorTheme.$modal = $('#dreditor-modal');
+
+        // Handle events on the document DOM.
+        $(document)
+          // Remove existing Bootstrap modal handler.
+          .off('click.bs.modal.data-api')
+
+          // Add our own modal handler.
+          .on('click.bs.modal.data-api', '[data-toggle="modal"]', DreditorTheme.Modal);
+      });
+    }
+  };
 
   $(document).ready(function () {
     var $button = $('#install-dreditor');
@@ -236,6 +385,9 @@
       info: 'info'
     };
     for (var type in messages) {
+      if (!messages.hasOwnProperty(type)) {
+        continue;
+      }
       if (messages[type].length > 0) {
         var messageClass = (typeof(status_class[type]) !== 'undefined' ? ' alert-' + status_class[type] : '');
         output += "<div class=\"alert alert-block" + messageClass + " messages " + type +"\">\n";
@@ -260,4 +412,4 @@
     return output;
   };
 
-})(jQuery);
+})(window, window.jQuery, window.Drupal, window.JS);

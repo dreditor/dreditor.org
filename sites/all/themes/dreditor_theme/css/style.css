@@ -17,7 +17,8 @@ td .btn-group:last-child {
 }
 .btn .icon {
   font-size: 150%;
-  margin: -.65em .25em -.5em -.25em;
+  margin: -.65em 0 -.5em 0;
+  vertical-align: middle;
 }
 .btn .icon.glyphicon-refresh {
   margin: -0.4em 0.3em 0 -0.3em;
@@ -26,8 +27,9 @@ td .btn-group:last-child {
   top: .15em;
 }
 .btn.btn-xs .icon.glyphicon-spin {
-  top: .35em;
-  margin-left: -.2em;
+  float: none;
+  margin: 0;
+  top: 0;
 }
 .glyphicon-refresh {
   -webkit-transform-origin: 50% 50%;
@@ -79,13 +81,45 @@ input:focus,button:focus,.btn:focus,.form-control:focus,textarea:focus,a:focus {
   opacity: .05;
   z-index: 0;
 }
-.build-log pre.raw {
+.dreditor-builds .table {
+  margin: 0;
+}
+.dreditor-builds .table>tbody>tr>td {
+  vertical-align: middle;
+}
+.dreditor-builds .table>tbody>tr:first-child>td {
+  border-top: 0;
+}
+.dreditor-builds .table>tbody>tr>td:first-child .label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1em;
+  margin-right: 5px;
+  min-width: 50px;
+  padding: 10px;
+}
+.dreditor-build-log pre.raw {
   /* List from http://hivelogic.com/articles/top-10-programming-fonts */
   font-family: "Anonymous Pro", "Inconsolata", "Consolas", "Deja Vu Sans Mono", "Droid Sans Mono", "Proggy Clean", "Monofur", "Profont", "Monaco", "Andale Mono", "Liberation Mono", "Courier", monospace;
   font-size: 12px;
   line-height: 1.25em;
+  height: 400px;
   margin: 0;
-  max-height: 500px;
   overflow: auto;
   white-space: pre-wrap;
+}
+.dreditor-build-log iframe.pretty {
+  border: 0;
+  height: 400px;
+  width: 100%;
+}
+/**
+ * Modal styles.
+ */
+.modal-dialog .ajax-progress {
+  color: #ccc;
+  float: left;
+  font-size: 24px;
+  margin: 3px 0 -3px;
 }

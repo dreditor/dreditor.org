@@ -14,7 +14,11 @@ function dreditor_org_drush_command() {
     'description' => dt('Builds the Dreditor extension for all browsers.'),
     'arguments' => array(
       'dest' => dt('The destination where the extensions are to be placed.'),
-      'ref' => dt('The repository checkout branch/tag/reference to use.'),
+    ),
+    'options' => array(
+      'branch' => dt('The git branch to clone into.'),
+      'checkout' => dt('The git tree to checkout. Can be any git "treeish" name: branch, tag, sha commit ID, etc.'),
+      'pr' => dt('The pull request number from https://github.com/dreditor/dreditor/pulls.'),
     ),
   );
   return $items;
@@ -23,19 +27,21 @@ function dreditor_org_drush_command() {
 /**
  * Validates the 'dreditor-build' command.
  */
-function drush_dreditor_org_dreditor_build_validate($dest = NULL, $ref = NULL) {
+function drush_dreditor_org_dreditor_build_validate($dest = NULL) {
   if (is_null($dest)) {
-    return drush_set_error('DREDITOR_ARGUMENT_MISSING', dt('You must specify a destination path where the extensions are to be placed.'));
-  }
-  if (is_null($ref)) {
-    return drush_set_error('DREDITOR_ARGUMENT_MISSING', dt('You must specify the repository checkout branch/tag/reference to use before building.'));
+    return drush_set_error('DREDITOR_ARGUMENT_MISSING', dt('You must specify a destination path where the built extensions are to be copied to.'));
   }
 }
 
 /**
  * Executes the 'dreditor-build' command.
  */
-function drush_dreditor_org_dreditor_build($dest, $ref) {
+function drush_dreditor_org_dreditor_build($dest) {
+  $branch = drush_get_option('branch');
+  $checkout = drush_get_option('checkout');
+  $pr = drush_get_option('pr');
+
+
   // Create a temporary directory to use for building the extension (the entire
   // directory is automatically deleted after the Drush command finishes
   // execution.
@@ -44,12 +50,21 @@ function drush_dreditor_org_dreditor_build($dest, $ref) {
   // Ensure the destination directory exists.
   drush_mkdir($dest, TRUE);
 
-  $commands = array(
-    // Clone the repo.
-    'git clone --progress https://github.com/dreditor/dreditor.git .',
-    // Checkout the ref.
-    "git checkout $ref",
-  );
+  $commands = array();
+
+  // Clone the repo.
+  $commands[] = 'git clone --depth=50' . ($branch ? " --branch=$branch" : '') . ' git://github.com/dreditor/dreditor.git .';
+
+  // Fetch the pull request.
+  if ($pr) {
+    $commands[] = "git fetch origin +refs/pull/$pr/merge:";
+    $checkout = 'FETCH_HEAD';
+  }
+
+  // Checkout the git tree.
+  if ($checkout) {
+    $commands[] = "git checkout -qf $checkout";
+  }
 
   if (_drush_dreditor_org_exec($commands, $temp_dir)) {
     // Only continue if there is an "autobuild.json" file to indicate how this
@@ -82,7 +97,7 @@ function drush_dreditor_org_dreditor_build($dest, $ref) {
       }
 
       // Copy the release directory of the build to the final destination.
-      drush_copy_dir($temp_dir . '/release', $dest, FILE_EXISTS_OVERWRITE);
+      drush_copy_dir($temp_dir . '/release', "$dest/releases", FILE_EXISTS_OVERWRITE);
     }
     elseif (empty($autobuild_commands)) {
       return drush_set_error('DREDITOR_NO_AUTOBUILD_COMMANDS', dt('Repository does not contain any autobuild commands to execute.'));
@@ -106,27 +121,13 @@ function drush_dreditor_org_dreditor_build($dest, $ref) {
  */
 function _drush_dreditor_org_exec(array $commands = array(), $cwd = NULL) {
   $cwd = $cwd ? "cd $cwd; " : '';
-
   // Iterate over commands.
   foreach ($commands as $command) {
     drush_print(dt('--- drush dreditor-build: executing command ---'));
     drush_print("$ $command");
-    if (!drush_shell_exec($cwd . $command)) {
-      $error = TRUE;
+    if (!drush_shell_exec_interactive($cwd . $command . ' 2>&1')) {
+      return drush_set_error('DREDITOR_EXEC_FAILED', dt('--- drush dreditor-build: executing command failed ---'));
     }
-    $output = drush_shell_exec_output();
-    if (is_array($output)) {
-      foreach ($output as $line) {
-        drush_print($line);
-      }
-    }
-    if (isset($error)) {
-      break;
-    }
-  }
-
-  if (isset($error)) {
-    return drush_set_error('DREDITOR_EXEC_FAILED', dt('--- drush dreditor-build: executing command failed ---'));
   }
   return TRUE;
 }
