@@ -6,6 +6,67 @@
  * Stub that contains functions necessary for the building process.
  */
 
+/**
+ * Helper function for executing the Drush dreditor-build command.
+ *
+ * @param string $hash
+ *   The hashed value of the build name. Should be a combination of branch, tag
+ *   pull request number or a specific git commit SHA id.
+ * @param int|bool $bid
+ *   (optional) The build identification number, relative to the $hash. If none
+ *   is specified, the last known build ID for the hash is used.
+ * @param array $options
+ *   The optional parameters to send to the drush command.
+ *
+ * @return bool|int
+ *   Returns TRUE if executing, FALSE if Drush cannot be found or an integer
+ *   of the error number returned by executing the Drush command.
+ */
+function _dreditor_org_drush_dreditor_build($hash, $bid, array $options = array()) {
+  $return = FALSE;
+  // Only run if the Drush command is located and executable.
+  if (($drush = variable_get('drush_path')) && is_executable($drush)) {
+    // Retrieve the build paths.
+    $paths = _dreditor_org_build_paths($hash, $bid);
+
+    // Only execute the build command if there's no process currently running.
+    if (!_dreditor_org_process_is_running($paths['pid'])) {
+      // Prepare the build directory.
+      file_prepare_directory($paths['dir'], FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+
+      // Format options for Drush.
+      foreach ($options as $name => $value) {
+        $options[$name] = "--$name=$value";
+      }
+
+      // Build the command to execute.
+      $arguments = array(
+        '%s %s %s %s >> %s 2>&1 & echo $! > %s',
+        $drush,
+        'dreditor-build',
+        implode(' ', $options),
+        _dreditor_org_uri_realpath($paths['dir']),
+        _dreditor_org_uri_realpath($paths['log']),
+        _dreditor_org_uri_realpath($paths['pid']),
+      );
+      $command = call_user_func_array('sprintf', $arguments);
+
+      // Execute the Drush dreditor-build command.
+      watchdog('dreditor_org', sprintf('Executing drush command: %s', $command));
+      exec($command, $output, $result);
+      $return = ($result == 0 ? TRUE : $result);
+      if ($return !== TRUE) {
+        watchdog('dreditor_org', 'Drush command "dreditor-build" returned the following result: %result', array(
+          '%result' => $result,
+        ), WATCHDOG_ERROR, $paths['log_url']);
+      }
+    }
+  }
+  else {
+    drupal_set_message(t('Could not locate the path to Drush.'), 'error');
+  }
+  return $return;
+}
 
 /**
  * Helper function for build buttons.
@@ -205,7 +266,16 @@ function _dreditor_org_set_bid($hash, $bid = NULL) {
   return $builds[$hash];
 }
 
-function _dreditor_org_build_hash($options) {
+/**
+ * Helper function to create the build hash based on the options provided.
+ *
+ * @param array $options
+ *   An array of options.
+ *
+ * @return string
+ *   The generated hash.
+ */
+function _dreditor_org_build_hash(array $options) {
   $hashes = variable_get('dreditor_build_hashes', array());
   $serialized = serialize($options);
   $hash = drupal_hash_base64($serialized);
