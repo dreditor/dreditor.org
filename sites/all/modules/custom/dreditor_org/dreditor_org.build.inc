@@ -78,10 +78,6 @@ function _dreditor_org_build_buttons(array $options = array()) {
       'class' => array('dreditor-build'),
     ),
   );
-  // Ensure all values are strings.
-  foreach ($options as $key => $value) {
-    $options[$key] = (string) $value;
-  }
   $hash = _dreditor_org_build_hash($options);
   $bid = _dreditor_org_get_bid($hash);
   $paths = _dreditor_org_build_paths($hash, $bid);
@@ -277,6 +273,10 @@ function _dreditor_org_set_bid($hash, $bid = NULL) {
  */
 function _dreditor_org_build_hash(array $options) {
   $hashes = variable_get('dreditor_build_hashes', array());
+  // Ensure all values are strings.
+  foreach ($options as $key => $value) {
+    $options[$key] = (string) $value;
+  }
   $serialized = serialize($options);
   $hash = drupal_hash_base64($serialized);
   if (!isset($hashes[$hash])) {

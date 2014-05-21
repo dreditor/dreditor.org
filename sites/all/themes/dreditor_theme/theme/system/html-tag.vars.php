@@ -37,7 +37,10 @@ function dreditor_theme_preprocess_html_tag__dreditor_no_builds(&$variables) {
  */
 function dreditor_theme_preprocess_html_tag__dreditor_building(&$variables) {
   $element = &$variables['element'];
-  $element['#attributes']['class'][] = 'badge';
+  $element['#attributes']['class'][] = 'btn';
+  $element['#attributes']['class'][] = 'btn-xs';
+  $element['#attributes']['class'][] = 'btn-default';
+  $element['#attributes']['class'][] = 'disabled';
   $icon = theme('icon', array(
     'bundle' => 'bootstrap',
     'icon' => 'glyphicon-refresh',
