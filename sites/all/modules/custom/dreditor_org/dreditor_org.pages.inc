@@ -6,11 +6,13 @@
 
 /**
  * Menu callback for "ajax/dreditor/%".
+ *
+ * @todo turn this in to a JS module callback.
  */
 function dreditor_org_ajax($action) {
   $json = array();
   if ($action === 'tags') {
-    $json['tags'] = dreditor_org_tags();
+    $json['tags'] = array_keys(dreditor_org_tags());
   }
   if ($action === 'ff-hash') {
     $json['hash'] = 'sha1:' . sha1_file(DRUPAL_ROOT . '/dreditor.xpi');
