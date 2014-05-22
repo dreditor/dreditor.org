@@ -321,7 +321,7 @@
                       else if ($.browser.mozilla) {
                         var params = {
                           'dreditor': {
-                            URL: '/dreditor.xpi',
+                            URL: '/dreditor.xpi?' + prodTag,
                             IconURL: '/sites/all/themes/dreditor_theme/logo.png',
                             hash: FF_HASH,
                             toString: function () { return '/dreditor.xpi'; }
