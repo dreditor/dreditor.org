@@ -180,9 +180,8 @@ function dreditor_org_builds() {
       ),
       array(
         'data' => _dreditor_org_build_buttons(array(
-          'data-build-type' => 'tag',
-          'data-branch' => $tag['name'],
-          'data-checkout' => $tag['commit']['sha'],
+          'branch' => $tag['name'],
+          'checkout' => $tag['commit']['sha'],
         )),
         'style' => 'text-align: right; width: 0;',
       ),
