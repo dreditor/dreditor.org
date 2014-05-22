@@ -5,6 +5,20 @@
  */
 
 /**
+ * Implements hook_js_callback_CALLBACK().
+ */
+function dreditor_org_js_callback_ff_hash() {
+  return array('hash' => 'sha1:' . sha1_file(DRUPAL_ROOT . '/dreditor.xpi'));
+}
+
+/**
+ * Implements hook_js_callback_CALLBACK().
+ */
+function dreditor_org_js_callback_tags() {
+  return array('tags' => array_keys(dreditor_org_tags()));
+}
+
+/**
  * Helper function for parsing build options from request data.
  *
  * @param array $data

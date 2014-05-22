@@ -58,14 +58,6 @@ function dreditor_org_menu() {
     'access arguments' => array('access content'),
     'file' => 'dreditor_org.pages.inc',
   );
-  $items['ajax/dreditor/%'] = array(
-    'title' => 'Automated Builds',
-    'page callback' => 'dreditor_org_ajax',
-    'page arguments' => array(2),
-    'access arguments' => array('access content'),
-    'file' => 'dreditor_org.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
   return $items;
 }
 
@@ -79,15 +71,23 @@ function dreditor_org_js_info() {
     'skip init' => TRUE,
   );
   return array(
+    // This callback does not need a token as it returns a simple hash.
+    'ff_hash' => $base + array(
+      'token' => FALSE,
+    ),
+    // This callback does not need a token as it returns cached available tags.
+    'tags' => $base + array(
+      'token' => FALSE,
+    ),
     'rebuild' => $base + array(
       // Needs full bootstrap because it must returned themed elements.
       'bootstrap' => DRUPAL_BOOTSTRAP_FULL,
     ),
+    // This callback does not need a token. It only acts to retrieve page
+    // content; as one would normally get on a simple page refresh.
     'build_check' => $base + array(
       // Needs full bootstrap because it must returned themed elements.
       'bootstrap' => DRUPAL_BOOTSTRAP_FULL,
-      // This callback does not need a token. It only acts to retrieve page
-      // content; as one would normally get on a simple page refresh.
       'token' => FALSE,
     ),
   );

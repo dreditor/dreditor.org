@@ -151,7 +151,7 @@
 
   $(document).ready(function () {
     var $button = $('#install-dreditor');
-    if ($button.length) {
+    if (JS && $button.length) {
       var userAgent = navigator.userAgent.toLowerCase();
       $.browser.chrome = /chrome/.test(navigator.userAgent.toLowerCase())  && chrome && chrome.webstore;
 
@@ -168,27 +168,27 @@
         userAgent = userAgent.substring(0,userAgent.indexOf('.'));
         $.browser.version = userAgent;
       }
-      else if ($.browser.mozilla) {
-          var FF_HASH;
-          $.getJSON('/ajax/dreditor/ff-hash', function (json) {
-            FF_HASH = json.hash;
-          });
-        }
 
       var prodTag, prodBranch = '1';
 
       // Get the latest tag.
-      $.getJSON('/ajax/dreditor/tags', function (json) {
-        if (json.tags) {
-          for (var i = 0; i < json.tags.length; i++) {
-            if (json.tags[i][0] === prodBranch && !json.tags[i].match(/beta|alpha|dev|rc/)) {
-              prodTag = json.tags[i];
-              break;
+      JS.ajax({
+        type: 'POST',
+        data: {
+          js_module: 'dreditor_org',
+          js_callback: 'tags'
+        },
+        success: function (json) {
+          if (json.tags) {
+            for (var i = 0; i < json.tags.length; i++) {
+              if (json.tags[i][0] === prodBranch && !json.tags[i].match(/beta|alpha|dev|rc/)) {
+                prodTag = json.tags[i];
+                break;
+              }
             }
           }
-        }
-      })
-      .complete(function () {
+        },
+        complete: function () {
           setTimeout(function () {
             $('body').once('dreditor-install', function () {
               Drupal.behaviors.dreditorInstall = {
@@ -319,32 +319,50 @@
                       }
                       // Firefox extension.
                       else if ($.browser.mozilla) {
-                        var params = {
-                          'dreditor': {
-                            URL: '/dreditor.xpi',
-                            IconURL: '/sites/all/themes/dreditor_theme/logo.png',
-                            hash: FF_HASH,
-                            toString: function () { return '/dreditor.xpi'; }
-                          }
-                        };
-                        InstallTrigger.install(params, function xpinstallCallback(url, status){
-                          if (status === 0) {
-                            $button
-                              .html($button.data('success-text'))
-                              .removeClass('btn-primary btn-danger')
-                              .addClass('btn-success disabled')
-                              .attr('disabled', true)
-                              .prepend($(icon).addClass('dreditor-checkmark'));
-                          }
-                          else {
-                            $button
-                              .button('fail')
-                              .removeClass('btn-primary btn-success')
-                              .addClass('btn-danger')
-                              .prepend($(icon).addClass('dreditor-blocked'));
-                          }
-                        });
-
+                        if (InstallTrigger) {
+                          JS.ajax({
+                            type: 'POST',
+                            data: {
+                              js_module: 'dreditor_org',
+                              js_callback: 'ff_hash'
+                            },
+                            success: function (json) {
+                              if (json && json.hash) {
+                                var params = {
+                                  'dreditor': {
+                                    URL: '/dreditor.xpi?' + prodTag,
+                                    IconURL: '/sites/all/themes/dreditor_theme/logo.png',
+                                    hash: json.hash,
+                                    toString: function () { return '/dreditor.xpi?' + prodTag; }
+                                  }
+                                };
+                                InstallTrigger.install(params, function xpinstallCallback(url, status){
+                                  if (status === 0) {
+                                    $button
+                                      .html($button.data('success-text'))
+                                      .removeClass('btn-primary btn-danger')
+                                      .addClass('btn-success disabled')
+                                      .attr('disabled', true)
+                                      .prepend($(icon).addClass('dreditor-checkmark'));
+                                  }
+                                  else {
+                                    $button
+                                      .button('fail')
+                                      .removeClass('btn-primary btn-success')
+                                      .addClass('btn-danger')
+                                      .prepend($(icon).addClass('dreditor-blocked'));
+                                  }
+                                });
+                              }
+                            },
+                            error: function () {
+                              window.location = '/dreditor.xpi';
+                            }
+                          });
+                        }
+                        else {
+                          window.location = '/dreditor.xpi';
+                        }
                       }
                       // Safari extension.
                       else if ($.browser.safari) {
@@ -364,6 +382,7 @@
               Drupal.attachBehaviors($(this));
             });
           }, 1000);
+        }
       });
     }
   });
