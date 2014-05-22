@@ -6,6 +6,13 @@
  */
 
 /**
+ * Implements hook_preprocess_page().
+ */
+function dreditor_theme_preprocess_page(&$variables) {
+  drupal_add_library('js', 'js');
+}
+
+/**
  * Implements hook_preprocess_menu_link().
  */
 function dreditor_theme_preprocess_menu_link(&$variables) {
