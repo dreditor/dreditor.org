@@ -275,10 +275,10 @@
                         .prepend($(icon).addClass('dreditor-' + browserIcon));
 
                       if (disabled) {
-                        $button.addClass('disabled').attr('disabled', 'disabled');
+                        $button.addClass('disabled').prop('disabled', true);
                       }
                       else {
-                        $button.removeClass('disabled').removeAttr('disabled');
+                        $button.removeClass('disabled').prop('disabled', false);
                       }
                       if (error) {
                         $button.addClass('btn-danger');
@@ -290,6 +290,8 @@
                     else {
                       $button
                         .button('install')
+                        .removeClass('disabled')
+                        .prop('disabled', false)
                         .prepend($(icon).addClass('dreditor-' + browserIcon));
                     }
                     $button.on('click', function (e) {

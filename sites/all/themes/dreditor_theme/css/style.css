@@ -17,8 +17,14 @@ td .btn-group:last-child {
 }
 .btn .icon {
   font-size: 150%;
-  margin: -.65em 0 -.5em 0;
+  height: 1em;
+  line-height: 1em;
+  margin: -.25em .25em -.25em -.25em;
   vertical-align: middle;
+  width: 1em;
+}
+.btn.btn-xs .icon {
+  margin: -.35em .1em -.25em -.1em;
 }
 .btn .icon.glyphicon-refresh {
   margin: -0.4em 0.3em 0 -0.3em;
