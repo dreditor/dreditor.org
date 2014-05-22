@@ -8,16 +8,14 @@
  * Implements hook_js_callback_CALLBACK().
  */
 function dreditor_org_js_callback_ff_hash() {
-  $json['hash'] = 'sha1:' . sha1_file(DRUPAL_ROOT . '/dreditor.xpi');
-  return $json;
+  return array('hash' => 'sha1:' . sha1_file(DRUPAL_ROOT . '/dreditor.xpi'));
 }
 
 /**
  * Implements hook_js_callback_CALLBACK().
  */
 function dreditor_org_js_callback_tags() {
-  $json['tags'] = array_keys(dreditor_org_tags());
-  return $json;
+  return array('tags' => array_keys(dreditor_org_tags()));
 }
 
 /**
