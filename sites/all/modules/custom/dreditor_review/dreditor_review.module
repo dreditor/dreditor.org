@@ -5,20 +5,20 @@
  */
 
 /**
- * Implements hook_js().
- *
- * @todo upgrade this to 7.x-2.x hook_js_info() implementation.
+ * Implements hook_js_info().
  */
-function dreditor_review_js() {
-  return array(
-    'json' => array(
-      'bootstrap'    => DRUPAL_BOOTSTRAP_VARIABLES,
-      'callback'     => 'dreditor_review_callback',
-      'includes'     => array('path'),
-      'dependencies' => array('system', 'cdn'),
-      'skip_hook_init' => TRUE,
-    ),
+function dreditor_review_js_info() {
+  $callbacks['json'] = array(
+    'bootstrap' => DRUPAL_BOOTSTRAP_VARIABLES,
+    'includes' => array('path'),
+    'dependencies' => array('system', 'cdn'),
+    'skip init' => TRUE,
+    'method' => array('POST', 'OPTIONS'),
+    // Because most people won't have dreditor.org accounts, it makes
+    // no sense to have a token check here.
+    'token' => FALSE,
   );
+  return $callbacks;
 }
 
 /**
@@ -45,9 +45,9 @@ function dreditor_review_cron() {
 }
 
 /**
- * Menu callback for 'js/dreditor_review/json'.
+ * Implements hook_js_callback_CALLBACK().
  */
-function dreditor_review_callback() {
+function dreditor_review_js_callback_json() {
   $dir = 'public://review';
   $json = array();
   $method = $_SERVER['REQUEST_METHOD'];
