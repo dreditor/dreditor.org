@@ -276,24 +276,18 @@ function versionCompare(v1, v2, options) {
               Drupal.behaviors.dreditorInstall = {
                 attach: function(context, settings) {
                   var autoupdate = false;
-                  var browserIcon = 'arrow-down';
                   var browser = '';
-                  if ($.browser.chrome) {
-                    browser = 'Chrome';
-                    autoupdate = true;
-                  }
-                  else if ($.browser.mozilla) {
-                    browser = 'Firefox';
-                  }
-                  else if ($.browser.safari) {
-                      browser = 'Safari';
-                      autoupdate = true;
-                    }
-                  if (browser.length) {
-                    browserIcon = browser.toLowerCase();
+                  var browserIcon = 'arrow-down';
+                  var disabled = false;
+                  var error = false;
+                  var installedVersion = '0.0.0';
+
+                  // Manually set a fall back production tag.
+                  if (!prodTag) {
+                    prodTag = '1.2.10';
                   }
 
-                  var installedVersion = false;
+                  // Determine installed version.
                   if (Drupal.dreditor && Drupal.dreditor.version) {
                     installedVersion = Drupal.dreditor.version;
                   }
@@ -304,17 +298,26 @@ function versionCompare(v1, v2, options) {
                     installedVersion = '0.0.1';
                   }
 
-                  var disabled = false;
-                  var error = false;
-
-                  // Manually set a fall back production tag.
-                  if (!prodTag) {
-                    prodTag = '1.2.5';
+                  // Determine the browser.
+                  if ($.browser.chrome) {
+                    browser = 'Chrome';
+                    autoupdate = installedVersion !== '0.0.0';
+                  }
+                  else if ($.browser.mozilla) {
+                    browser = 'Firefox';
+                  }
+                  else if ($.browser.safari) {
+                    browser = 'Safari';
+                    autoupdate = installedVersion !== '0.0.0';
+                  }
+                  if (browser.length) {
+                    browserIcon = browser.toLowerCase();
                   }
 
                   var installText = 'Install Dreditor ' + prodTag + (browser ? ' for ' + browser : '');
                   var loadingText = 'Downloading Dreditor ' + prodTag + ' ...';
                   var updateText = 'A new version is available: Dreditor ' + prodTag;
+
                   if (autoupdate) {
                     disabled = true;
                     updateText += '<br /><small>(Update in ' + browser + ' extension preferences)</small>';
@@ -326,7 +329,7 @@ function versionCompare(v1, v2, options) {
                     error = true;
                     browserIcon = 'blocked';
                   }
-                  else if (versionCompare(installedVersion, prodTag) >= 0) {
+                  else if (installedVersion !== '0.0.0' && versionCompare(installedVersion, prodTag) >= 0) {
                     updateText = 'Dreditor ' + installedVersion + ' is installed and up to date.';
                     disabled = true;
                   }
@@ -346,7 +349,7 @@ function versionCompare(v1, v2, options) {
 
                   if ($button.length) {
                     if (installedVersion) {
-                      if (installedVersion === '0.0.1') {
+                      if (installedVersion === '0.0.0' || installedVersion === '0.0.1') {
                         $button.html($button.data('install-text'));
                       }
                       else {
