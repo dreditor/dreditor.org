@@ -294,7 +294,9 @@ function versionCompare(v1, v2, options) {
                   else if (Drupal.dreditor) {
                     installedVersion = '0.0.1';
                   }
-                  if ($.browser.mozilla && installedVersion <= '1.2.3') {
+
+                  // Detect older versions of the Dreditor user script.
+                  if (installedVersion !== '0.0.0' && $.browser.mozilla && versionCompare(installedVersion, '1.2.3') <= 0) {
                     installedVersion = '0.0.1';
                   }
 
