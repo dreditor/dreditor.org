@@ -3,9 +3,9 @@ description = A high-performance JavaScript callback handler for 3rd party modul
 package = Performance
 core = "7.x"
 configure = admin/config/system/js
-; Information added by Drupal.org packaging script on 2014-05-18
+; Information added by Drupal.org packaging script on 2014-07-18
 version = "7.x-2.x-dev"
 core = "7.x"
 project = "js"
-datestamp = "1400454528"
+datestamp = "1405705149"
 
