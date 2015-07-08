@@ -18,7 +18,7 @@ function dreditor_org_drush_command() {
     'options' => array(
       'branch' => dt('The git branch to clone into.'),
       'checkout' => dt('The git tree to checkout. Can be any git "treeish" name: branch, tag, sha commit ID, etc.'),
-      'pr' => dt('The pull request number from https://github.com/dreditor/dreditor/pulls.'),
+      'pr' => dt('The pull request number from the repository.'),
     ),
   );
   return $items;
@@ -41,6 +41,12 @@ function drush_dreditor_org_dreditor_build($dest) {
   $checkout = drush_get_option('checkout');
   $pr = drush_get_option('pr');
 
+  $username = variable_get('dreditor_org_github_username', FALSE);
+  $repository = variable_get('dreditor_org_github_repository', FALSE);
+
+  if (!$username || !$repository) {
+    return drush_set_error('DREDITOR_NOT_CONFIGURED', dt('Invalid username or repository variable settings.'));
+  }
 
   // Create a temporary directory to use for building the extension (the entire
   // directory is automatically deleted after the Drush command finishes
@@ -53,7 +59,7 @@ function drush_dreditor_org_dreditor_build($dest) {
   $commands = array();
 
   // Clone the repo.
-  $commands[] = 'git clone --depth=50' . ($branch ? " --branch=$branch" : '') . ' git://github.com/dreditor/dreditor.git .';
+  $commands[] = 'git clone --depth=50' . ($branch ? " --branch=$branch" : '') . " git://github.com/$username/$repository.git .";
 
   // Fetch the pull request.
   if ($pr) {

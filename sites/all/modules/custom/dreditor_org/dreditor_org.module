@@ -145,7 +145,8 @@ function dreditor_org_cronapi($op, $job = NULL) {
  * Helper function to wrap GitHub API requests with an access token.
  *
  * @param string $path
- *   The REST path, relative to "https://api.github.com".
+ *   The REST path, relative to:
+ *   https://api.github.com/repos/USERNAME/REPOSITORY
  * @param array $options
  *   An array of options to pass to drupal_http_request().
  *
@@ -153,11 +154,13 @@ function dreditor_org_cronapi($op, $job = NULL) {
  *   The data returned from GitHub, FALSE if an error occurred. All errors are
  *   logged via watchdog.
  */
-function _github_api($path, $options = array()) {
+function _github_api($path = '', $options = array()) {
   $quiet = !empty($options['quiet']);
-  $access_token = variable_get('dreditor_org_github_access_token', '');
-  if ($access_token) {
-    $url = 'https://api.github.com' . $path;
+  $username = variable_get('dreditor_org_github_username', FALSE);
+  $repository = variable_get('dreditor_org_github_repository', FALSE);
+  $access_token = variable_get('dreditor_org_github_access_token', FALSE);
+  if ($username && $repository && $access_token) {
+    $url = "https://api.github.com/repos/$username/$repository" . $path;
     $request = drupal_http_request($url . (strpos($url, '?') !== FALSE ? '&' : '?') . 'access_token=' . $access_token, $options);
     $code = substr($request->code, 0, 1);
     if ($code !== '4' && $code !== '5') {
@@ -178,7 +181,7 @@ function _github_api($path, $options = array()) {
     }
   }
   else {
-    drupal_set_message(t('The access token needed to connect with the Dreditor repository on GitHub is missing. Please !configure this token and ensure the token provided belongs to an account with full admin privileges for the repository.', array(
+    drupal_set_message(t('A GitHub username, repository and access token is needed to connect. Please !configure this token and ensure the token provided belongs to an account with full admin privileges for the repository.', array(
       '!configure' => l(t('configure'), 'admin/dreditor/github'),
     )), 'error', FALSE);
   }
@@ -186,7 +189,7 @@ function _github_api($path, $options = array()) {
 }
 
 /**
- * Repository information for dreditor/dreditor on GitHub.
+ * Retrieves the repository information from GitHub.
  *
  * @param bool $sync
  *   Sync repository information via GitHub API.
@@ -202,7 +205,7 @@ function dreditor_org_repo($sync = FALSE) {
       $repo = $cache->data;
     }
     else {
-      if ($json = _github_api('/repos/dreditor/dreditor')) {
+      if ($json = _github_api()) {
         $repo = $json;
         cache_set('dreditor_org_repo', $repo);
       }
@@ -212,7 +215,7 @@ function dreditor_org_repo($sync = FALSE) {
 }
 
 /**
- * Repository contents for dreditor/dreditor on GitHub.
+ * Repository contents from GitHub.
  *
  * @param string $path
  *   The file to retrieve from the repository.
@@ -236,7 +239,7 @@ function dreditor_org_repo_content($path = NULL, $sync = FALSE) {
         if (preg_match('/.(txt|html|md|markdown)$/', $path)) {
           $options['headers']['Accept'] = 'application/vnd.github.v3.html+json';
         }
-        $content[$path] = _github_api('/repos/dreditor/dreditor/contents/' . $path, $options);
+        $content[$path] = _github_api('/contents/' . $path, $options);
         cache_set('dreditor_org_repo_content', $content);
       }
     }
@@ -248,7 +251,7 @@ function dreditor_org_repo_content($path = NULL, $sync = FALSE) {
 }
 
 /**
- * Branches for dreditor/dreditor on GitHub.
+ * Repository branches from GitHub.
  *
  * @param bool $sync
  *   Sync branches via GitHub API.
@@ -264,10 +267,10 @@ function dreditor_org_branches($sync = FALSE) {
       $branches = $cache->data;
     }
     else {
-      if ($json = _github_api('/repos/dreditor/dreditor/branches')) {
+      if ($json = _github_api('/branches')) {
         foreach ($json as $branch) {
           $branches[$branch['name']] = $branch;
-          $branches[$branch['name']]['autobuild'] = (bool) _github_api('/repos/dreditor/dreditor/contents/autobuild.json?ref=' . $branch['name'], array('quiet' => TRUE));
+          $branches[$branch['name']]['autobuild'] = (bool) _github_api('/contents/autobuild.json?ref=' . $branch['name'], array('quiet' => TRUE));
         }
         cache_set('dreditor_org_branches', $branches);
       }
@@ -277,7 +280,7 @@ function dreditor_org_branches($sync = FALSE) {
 }
 
 /**
- * Pull requests for dreditor/dreditor on GitHub.
+ * Repository pull requests from GitHub.
  *
  * @param bool $sync
  *   Sync pull requests via GitHub API.
@@ -292,10 +295,10 @@ function dreditor_org_pull_requests($sync = FALSE) {
       $pull_requests = $cache->data;
     }
     else {
-      if ($json = _github_api('/repos/dreditor/dreditor/pulls')) {
+      if ($json = _github_api('/pulls')) {
         foreach ($json as $pull_request) {
-          $pr = _github_api('/repos/dreditor/dreditor/pulls/' . $pull_request['number']);
-          $trees = _github_api('/repos/dreditor/dreditor/git/trees/' . $pr['merge_commit_sha']);
+          $pr = _github_api('/pulls/' . $pull_request['number']);
+          $trees = _github_api('/git/trees/' . $pr['merge_commit_sha']);
           $pr['autobuild'] = FALSE;
           foreach ($trees['tree'] as $tree) {
             if ($tree['path'] === 'autobuild.json') {
@@ -313,7 +316,7 @@ function dreditor_org_pull_requests($sync = FALSE) {
 }
 
 /**
- * Tags for dreditor/dreditor on GitHub.
+ * Repository tags from GitHub.
  *
  * @param bool $sync
  *   Sync tags via GitHub API.
@@ -329,10 +332,10 @@ function dreditor_org_tags($sync = FALSE) {
       $tags = $cache->data;
     }
     else {
-      if ($json = _github_api('/repos/dreditor/dreditor/tags')) {
+      if ($json = _github_api('/tags')) {
         foreach ($json as $tag) {
           $tags[$tag['name']] = $tag;
-          $tags[$tag['name']]['autobuild'] = (bool) _github_api('/repos/dreditor/dreditor/contents/autobuild.json?ref=' . $tag['name'], array('quiet' => TRUE));
+          $tags[$tag['name']]['autobuild'] = (bool) _github_api('/contents/autobuild.json?ref=' . $tag['name'], array('quiet' => TRUE));
         }
         cache_set('dreditor_org_tags', $tags);
       }
@@ -362,8 +365,10 @@ function dreditor_org_tags($sync = FALSE) {
  * @see http://developer.github.com/v3/repos/hooks/#events
  */
 function dreditor_org_github_webhook_event(array $payload, array &$response, array $args, $event) {
-  // dreditor/dreditor webhook events.
-  if (isset($payload['repository']['full_name']) && $payload['repository']['full_name'] === 'dreditor/dreditor') {
+  // Repository webhook events.
+  $username = variable_get('dreditor_org_github_username', FALSE);
+  $repository = variable_get('dreditor_org_github_repository', FALSE);
+  if (isset($payload['repository']['full_name']) && $payload['repository']['full_name'] === "$username/$repository") {
     $build_options = array();
     $cleanup_options = array();
     switch ($event) {
