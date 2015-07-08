@@ -552,4 +552,7 @@ $conf['404_fast_html'] = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN"
  */
 # $conf['allow_authorize_operations'] = FALSE;
 
+$conf['jquery_update_jquery_version'] = '1.10';
+$conf['jquery_update_jquery_migrate_enable'] = 1;
+
 @include 'local.settings.php';

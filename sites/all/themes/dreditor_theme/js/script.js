@@ -228,6 +228,10 @@ function versionCompare(v1, v2, options) {
           // Add our own modal handler.
           .on('click.bs.modal.data-api', '[data-toggle="modal"]', DreditorTheme.Modal);
       });
+      var $support = $('#dreditor-support');
+      if ($support[0]) {
+        $support.modal('show');
+      }
     }
   };
 

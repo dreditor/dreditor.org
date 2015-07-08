@@ -127,11 +127,6 @@ Drupal.admin.getCache = function (hash, onSuccess) {
     dataType: 'text', // Prevent auto-evaluation of response.
     global: false, // Do not trigger global AJAX events.
     url: Drupal.settings.admin_menu.basePath.replace(/admin_menu/, 'js/admin_menu/cache/' + hash),
-    data: {
-      js_module: 'admin_menu',
-      js_callback: 'cache',
-      js_token: Drupal.settings.js && Drupal.settings.js.tokens && Drupal.settings.js.tokens['admin_menu-cache'] || ''
-    },
     success: onSuccess,
     complete: function (XMLHttpRequest, status) {
       Drupal.admin.hashes.hash = status;
@@ -224,18 +219,6 @@ Drupal.admin.behaviors.destination = function (context, settings, $adminMenu) {
  *   it will not run last.
  */
 Drupal.admin.behaviors.hover = function (context, settings, $adminMenu) {
-  // Hover emulation for IE 6.
-  if ($.browser.msie && parseInt(jQuery.browser.version) == 6) {
-    $('li', $adminMenu).hover(
-      function () {
-        $(this).addClass('iehover');
-      },
-      function () {
-        $(this).removeClass('iehover');
-      }
-    );
-  }
-
   // Delayed mouseout.
   $('li.expandable', $adminMenu).hover(
     function () {
