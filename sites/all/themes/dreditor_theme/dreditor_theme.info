@@ -21,7 +21,7 @@ settings[toggle_name] = 0
 settings[toggle_search] = 0
 
 settings[bootstrap_cdn_provider] = 'jsdelivr'
-settings[bootstrap_cdn_jsdelivr_version] = '3.3.2'
+settings[bootstrap_cdn_jsdelivr_version] = '3.3.5'
 settings[bootstrap_cdn_jsdelivr_theme] = 'yeti'
 
 settings[bootstrap_navbar_position] = 'fixed-top'
