@@ -101,6 +101,7 @@ function dreditor_org_builds() {
     '#rows' => $pull_request_rows,
     '#empty' => t('There are currently no pull request builds.'),
     '#context' => array(
+      'responsive' => FALSE,
       'striped' => FALSE,
       'hover' => FALSE,
     ),
@@ -141,6 +142,7 @@ function dreditor_org_builds() {
     '#rows' => $branch_rows,
     '#empty' => t('There are currently no branch builds.'),
     '#context' => array(
+      'responsive' => FALSE,
       'striped' => FALSE,
       'hover' => FALSE,
     ),
@@ -177,6 +179,7 @@ function dreditor_org_builds() {
     '#rows' => $tag_rows,
     '#empty' => t('There are currently no tagged builds.'),
     '#context' => array(
+      'responsive' => FALSE,
       'striped' => FALSE,
       'hover' => FALSE,
     ),
